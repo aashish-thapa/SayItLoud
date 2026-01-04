@@ -25,25 +25,25 @@ export function LeftSidebar() {
   if (loading) {
     return (
       <div className='space-y-6 animate-pulse'>
-        <div className='bg-white p-4 rounded-2xl shadow-sm border border-gray-200/80'>
+        <div className='bg-card p-4 rounded-2xl shadow-sm border border-border'>
           <div className='flex items-center gap-3'>
-            <div className='w-12 h-12 rounded-full bg-gray-200'></div>
+            <div className='w-12 h-12 rounded-full bg-muted'></div>
             <div className='space-y-2'>
-              <div className='h-4 bg-gray-200 rounded w-24'></div>
-              <div className='h-3 bg-gray-200 rounded w-16'></div>
+              <div className='h-4 bg-muted rounded w-24'></div>
+              <div className='h-3 bg-muted rounded w-16'></div>
             </div>
           </div>
         </div>
-        <div className='bg-white p-4 rounded-2xl shadow-sm border border-gray-200/80 h-48'></div>
-        <div className='h-12 bg-gray-200 rounded-lg w-full'></div>
+        <div className='bg-card p-4 rounded-2xl shadow-sm border border-border h-48'></div>
+        <div className='h-12 bg-muted rounded-lg w-full'></div>
       </div>
     )
   }
 
   if (!user) {
     return (
-      <div className='bg-white p-4 rounded-2xl shadow-sm border border-gray-200/80'>
-        <p className='text-center font-medium'>Welcome to SayItLoud</p>
+      <div className='bg-card p-4 rounded-2xl shadow-sm border border-border'>
+        <p className='text-center font-medium text-card-foreground'>Welcome to SayItLoud</p>
         <p className='mt-2 text-sm text-center text-muted-foreground'>
           Log in to join the discussion and share your thoughts.
         </p>
@@ -58,7 +58,7 @@ export function LeftSidebar() {
 
   return (
     <div className='flex flex-col gap-6'>
-      <div className='bg-white p-4 rounded-2xl shadow-sm border border-gray-200/80'>
+      <div className='bg-card p-4 rounded-2xl shadow-sm border border-border'>
         <Link href={`/profile/${user.username}`} className='block group'>
           <div className='flex items-center gap-3'>
             <div className='w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xl flex-shrink-0 relative overflow-hidden'>
@@ -73,20 +73,20 @@ export function LeftSidebar() {
                 user.username.charAt(0).toUpperCase()
               )}
             </div>
-            <div>
-              <p className='font-bold group-hover:underline'>{user.username}</p>
-              <p className='text-sm text-muted-foreground'>@{user.username}</p>
+            <div className='min-w-0 flex-1'>
+              <p className='font-bold group-hover:underline text-card-foreground truncate'>{user.username}</p>
+              <p className='text-sm text-muted-foreground truncate'>@{user.username}</p>
             </div>
           </div>
         </Link>
       </div>
 
-      <nav className='bg-white p-3 rounded-2xl shadow-sm border border-gray-200/80'>
+      <nav className='bg-card p-3 rounded-2xl shadow-sm border border-border'>
         <ul className='space-y-1'>
           {navItems.map((item) => (
             <li key={item.label}>
               <Link href={item.href} onClick={item.onClick}>
-                <div className='flex items-center gap-4 p-3 rounded-lg hover:bg-gray-100 transition-colors font-semibold text-foreground/80 hover:text-primary'>
+                <div className='flex items-center gap-4 p-3 rounded-lg hover:bg-accent transition-colors font-semibold text-card-foreground/80 hover:text-primary'>
                   <item.icon className='w-6 h-6' />
                   <span>{item.label}</span>
                 </div>

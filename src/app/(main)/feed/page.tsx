@@ -116,9 +116,9 @@ export default function FeedPage() {
 
     if (error) {
       return (
-        <div className='bg-white rounded-2xl border border-gray-200/80 p-8 text-center'>
-          <Frown className='w-16 h-16 mx-auto text-gray-300' />
-          <h2 className='mt-4 text-xl font-bold'>Could not load feed</h2>
+        <div className='bg-card rounded-2xl border border-border p-8 text-center'>
+          <Frown className='w-16 h-16 mx-auto text-muted-foreground' />
+          <h2 className='mt-4 text-xl font-bold text-card-foreground'>Could not load feed</h2>
           <p className='mt-2 text-muted-foreground'>{error}</p>
         </div>
       )
@@ -126,8 +126,8 @@ export default function FeedPage() {
 
     if (posts.length === 0) {
       return (
-        <div className='bg-white rounded-2xl border border-gray-200/80 p-8 text-center'>
-          <h2 className='mt-4 text-xl font-bold'>The feed is quiet...</h2>
+        <div className='bg-card rounded-2xl border border-border p-8 text-center'>
+          <h2 className='mt-4 text-xl font-bold text-card-foreground'>The feed is quiet...</h2>
           <p className='mt-2 text-muted-foreground'>
             Be the first to post a thought!
           </p>

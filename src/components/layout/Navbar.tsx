@@ -19,6 +19,7 @@ import { NotificationsDropdown } from './NotificationsDropdown'
 import { getNotifications } from '@/lib/api'
 import Image from 'next/image'
 import { MobileMenu } from './MobileMenu'
+import { ThemeToggle } from '@/components/ui/ThemeToggle'
 
 export function Navbar() {
   const { user, logout } = useAuth()
@@ -46,7 +47,7 @@ export function Navbar() {
 
   return (
     <>
-      <header className='sticky top-0 z-40 w-full border-b bg-white'>
+      <header className='sticky top-0 z-40 w-full border-b border-border bg-card'>
         <div className='container mx-auto flex h-16 items-center'>
           {/* Left Section */}
           <div className='flex items-center gap-6'>
@@ -64,7 +65,9 @@ export function Navbar() {
           </div>
 
           {/* Right Section */}
-          <div className='flex items-center gap-3'>
+          <div className='flex items-center gap-2'>
+            <ThemeToggle />
+
             <Button className='hidden sm:flex items-center gap-2'>
               <PenSquare className='w-5 h-5' />
               <span>Post</span>
@@ -81,7 +84,7 @@ export function Navbar() {
                   >
                     <Bell className='h-6 w-6' />
                     {unreadCount > 0 && (
-                      <span className='absolute top-0 right-0 block h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white' />
+                      <span className='absolute top-0 right-0 block h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-card' />
                     )}
                     <span className='sr-only'>View notifications</span>
                   </Button>
@@ -113,7 +116,7 @@ export function Navbar() {
                       </div>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className='w-56 bg-white' align='end'>
+                  <DropdownMenuContent className='w-56 bg-card' align='end'>
                     <DropdownMenuLabel>
                       <p className='font-bold'>{user.username}</p>
                       <p className='text-xs text-muted-foreground font-normal'>

@@ -106,27 +106,27 @@ export default function NotificationsPage() {
 
   return (
     <div className='space-y-6'>
-      <h1 className='text-3xl font-bold'>Notifications</h1>
-      <div className='bg-white rounded-2xl border'>
+      <h1 className='text-3xl font-bold text-foreground'>Notifications</h1>
+      <div className='bg-card rounded-2xl border border-border'>
         {isLoading ? (
           <p className='p-6 text-center text-muted-foreground'>Loading...</p>
         ) : notifications.length === 0 ? (
           <div className='p-8 text-center'>
-            <Bell className='w-16 h-16 mx-auto text-gray-300' />
-            <h3 className='mt-4 text-xl font-bold'>No notifications yet</h3>
+            <Bell className='w-16 h-16 mx-auto text-muted-foreground' />
+            <h3 className='mt-4 text-xl font-bold text-card-foreground'>No notifications yet</h3>
             <p className='mt-2 text-muted-foreground'>
               Likes, comments, and new followers will appear here.
             </p>
           </div>
         ) : (
           <>
-            <ul className='divide-y'>
+            <ul className='divide-y divide-border'>
               {notifications.map((n) => (
                 <li key={n._id}>
                   <NotificationLink notification={n}>
                     <div
                       className={cn(
-                        'p-4 flex items-start gap-4 hover:bg-gray-50',
+                        'p-4 flex items-start gap-4 hover:bg-accent',
                         !n.read && 'bg-primary/5'
                       )}
                       onClick={() => !n.read && handleMarkAsRead(n._id)}
@@ -135,7 +135,7 @@ export default function NotificationsPage() {
                         <NotificationIcon type={n.type} />
                       </div>
                       <div className='flex-1'>
-                        <p className='text-sm'>
+                        <p className='text-sm text-card-foreground'>
                           <span className='font-bold'>
                             {n.initiator.username}
                           </span>{' '}
@@ -159,10 +159,10 @@ export default function NotificationsPage() {
             {/* Load more trigger */}
             <div ref={loadMoreRef} className='h-10 flex items-center justify-center'>
               {isLoadingMore && (
-                <Loader2 className='w-6 h-6 animate-spin text-gray-400' />
+                <Loader2 className='w-6 h-6 animate-spin text-muted-foreground' />
               )}
               {!hasMore && notifications.length > 0 && (
-                <p className='text-sm text-gray-400'>No more notifications</p>
+                <p className='text-sm text-muted-foreground'>No more notifications</p>
               )}
             </div>
           </>

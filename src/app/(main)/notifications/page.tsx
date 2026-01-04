@@ -6,7 +6,9 @@ import { Notification as NotificationType } from '@/types'
 import { formatDistanceToNow } from 'date-fns'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
-import { Heart, MessageCircle, UserPlus, Bell } from 'lucide-react'
+import { Heart, MessageCircle, UserPlus, Bell, Loader2 } from 'lucide-react'
+
+const NOTIFICATIONS_PER_PAGE = 20
 
 function NotificationIcon({ type }: { type: NotificationType['type'] }) {
   if (type === 'like')
@@ -22,21 +24,59 @@ export default function NotificationsPage() {
     []
   )
   const [isLoading, setIsLoading] = React.useState(true)
+  const [isLoadingMore, setIsLoadingMore] = React.useState(false)
+  const [page, setPage] = React.useState(1)
+  const [hasMore, setHasMore] = React.useState(true)
 
-  React.useEffect(() => {
-    async function loadNotifications() {
-      setIsLoading(true)
+  const loadMoreRef = React.useRef<HTMLDivElement>(null)
+
+  const loadNotifications = React.useCallback(
+    async (pageNum: number, append = false) => {
+      if (pageNum === 1) {
+        setIsLoading(true)
+      } else {
+        setIsLoadingMore(true)
+      }
+
       try {
-        const data = await getNotifications()
-        setNotifications(data)
+        const response = await getNotifications(pageNum, NOTIFICATIONS_PER_PAGE)
+        if (append) {
+          setNotifications((prev) => [...prev, ...response.notifications])
+        } else {
+          setNotifications(response.notifications)
+        }
+        setHasMore(response.hasMore)
+        setPage(pageNum)
       } catch (error) {
         console.error('Failed to fetch notifications:', error)
       } finally {
         setIsLoading(false)
+        setIsLoadingMore(false)
       }
-    }
-    loadNotifications()
-  }, [])
+    },
+    []
+  )
+
+  React.useEffect(() => {
+    loadNotifications(1)
+  }, [loadNotifications])
+
+  React.useEffect(() => {
+    if (!loadMoreRef.current || !hasMore || isLoading || isLoadingMore) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
+          loadNotifications(page + 1, true)
+        }
+      },
+      { threshold: 0.1 }
+    )
+
+    observer.observe(loadMoreRef.current)
+
+    return () => observer.disconnect()
+  }, [hasMore, isLoading, isLoadingMore, page, loadNotifications])
 
   const handleMarkAsRead = async (id: string) => {
     setNotifications((prev) =>
@@ -46,7 +86,6 @@ export default function NotificationsPage() {
       await markNotificationAsRead(id)
     } catch (error) {
       console.error('Failed to mark notification as read:', error)
-      // Optionally revert UI on error
     }
   }
 
@@ -80,41 +119,53 @@ export default function NotificationsPage() {
             </p>
           </div>
         ) : (
-          <ul className='divide-y'>
-            {notifications.map((n) => (
-              <li key={n._id}>
-                <NotificationLink notification={n}>
-                  <div
-                    className={cn(
-                      'p-4 flex items-start gap-4 hover:bg-gray-50',
-                      !n.read && 'bg-primary/5'
-                    )}
-                    onClick={() => !n.read && handleMarkAsRead(n._id)}
-                  >
-                    <div className='mt-1'>
-                      <NotificationIcon type={n.type} />
+          <>
+            <ul className='divide-y'>
+              {notifications.map((n) => (
+                <li key={n._id}>
+                  <NotificationLink notification={n}>
+                    <div
+                      className={cn(
+                        'p-4 flex items-start gap-4 hover:bg-gray-50',
+                        !n.read && 'bg-primary/5'
+                      )}
+                      onClick={() => !n.read && handleMarkAsRead(n._id)}
+                    >
+                      <div className='mt-1'>
+                        <NotificationIcon type={n.type} />
+                      </div>
+                      <div className='flex-1'>
+                        <p className='text-sm'>
+                          <span className='font-bold'>
+                            {n.initiator.username}
+                          </span>{' '}
+                          {n.message}
+                        </p>
+                        <p className='text-xs text-muted-foreground mt-0.5'>
+                          {formatDistanceToNow(new Date(n.createdAt), {
+                            addSuffix: true,
+                          })}
+                        </p>
+                      </div>
+                      {!n.read && (
+                        <div className='w-2.5 h-2.5 rounded-full bg-primary mt-2 flex-shrink-0'></div>
+                      )}
                     </div>
-                    <div className='flex-1'>
-                      <p className='text-sm'>
-                        <span className='font-bold'>
-                          {n.initiator.username}
-                        </span>{' '}
-                        {n.message}
-                      </p>
-                      <p className='text-xs text-muted-foreground mt-0.5'>
-                        {formatDistanceToNow(new Date(n.createdAt), {
-                          addSuffix: true,
-                        })}
-                      </p>
-                    </div>
-                    {!n.read && (
-                      <div className='w-2.5 h-2.5 rounded-full bg-primary mt-2 flex-shrink-0'></div>
-                    )}
-                  </div>
-                </NotificationLink>
-              </li>
-            ))}
-          </ul>
+                  </NotificationLink>
+                </li>
+              ))}
+            </ul>
+
+            {/* Load more trigger */}
+            <div ref={loadMoreRef} className='h-10 flex items-center justify-center'>
+              {isLoadingMore && (
+                <Loader2 className='w-6 h-6 animate-spin text-gray-400' />
+              )}
+              {!hasMore && notifications.length > 0 && (
+                <p className='text-sm text-gray-400'>No more notifications</p>
+              )}
+            </div>
+          </>
         )}
       </div>
     </div>

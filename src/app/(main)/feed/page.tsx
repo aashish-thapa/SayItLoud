@@ -6,36 +6,73 @@ import { Post } from '@/types'
 import { PostCard } from '@/components/feed/PostCard'
 import { CreatePostForm } from '@/components/feed/CreatePostForm'
 import { PostCardSkeleton } from '@/components/feed/PostCardSkeleton'
-import { Frown } from 'lucide-react'
+import { Frown, Loader2 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+
+const POSTS_PER_PAGE = 10
 
 export default function FeedPage() {
   const { user } = useAuth()
   const [posts, setPosts] = React.useState<Post[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
+  const [isLoadingMore, setIsLoadingMore] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
+  const [page, setPage] = React.useState(1)
+  const [hasMore, setHasMore] = React.useState(true)
 
-  React.useEffect(() => {
-    async function loadFeed() {
-      setIsLoading(true)
+  const loadMoreRef = React.useRef<HTMLDivElement>(null)
+
+  const loadFeed = React.useCallback(
+    async (pageNum: number, append = false) => {
+      if (pageNum === 1) {
+        setIsLoading(true)
+      } else {
+        setIsLoadingMore(true)
+      }
+
       try {
-        // artificial delay to show skeleton
-        await new Promise((resolve) => setTimeout(resolve, 1000))
-        const feed = await getFeed()
-        setPosts(feed)
-      } catch (error) {
-        if (error instanceof Error) {
-          setError(error.message)
+        const response = await getFeed(pageNum, POSTS_PER_PAGE)
+        if (append) {
+          setPosts((prev) => [...prev, ...response.posts])
+        } else {
+          setPosts(response.posts)
+        }
+        setHasMore(response.hasMore)
+        setPage(pageNum)
+      } catch (err) {
+        if (err instanceof Error) {
+          setError(err.message)
         } else {
           setError('An unknown error occurred while fetching the feed.')
         }
       } finally {
         setIsLoading(false)
+        setIsLoadingMore(false)
       }
-    }
+    },
+    []
+  )
 
-    loadFeed()
-  }, [])
+  React.useEffect(() => {
+    loadFeed(1)
+  }, [loadFeed])
+
+  React.useEffect(() => {
+    if (!loadMoreRef.current || !hasMore || isLoading || isLoadingMore) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
+          loadFeed(page + 1, true)
+        }
+      },
+      { threshold: 0.1 }
+    )
+
+    observer.observe(loadMoreRef.current)
+
+    return () => observer.disconnect()
+  }, [hasMore, isLoading, isLoadingMore, page, loadFeed])
 
   const handlePostCreated = (newPost: Omit<Post, 'user'>) => {
     if (!user) return
@@ -57,16 +94,12 @@ export default function FeedPage() {
   }
 
   const handlePostDeleted = async (postId: string) => {
-    // Optimistically remove the post from the UI
     setPosts(posts.filter((p) => p._id !== postId))
 
     try {
       await deletePost(postId)
     } catch (error) {
-      // If the API call fails, log the error.
-      // You might want to add the post back to the list or show a toast notification.
       console.error('Failed to delete post:', error)
-      // For this example, we'll just log it and not revert the state.
     }
   }
 
@@ -111,6 +144,16 @@ export default function FeedPage() {
             onPostDeleted={handlePostDeleted}
           />
         ))}
+
+        {/* Load more trigger */}
+        <div ref={loadMoreRef} className='h-10 flex items-center justify-center'>
+          {isLoadingMore && (
+            <Loader2 className='w-6 h-6 animate-spin text-gray-400' />
+          )}
+          {!hasMore && posts.length > 0 && (
+            <p className='text-sm text-gray-400'>You&apos;ve reached the end</p>
+          )}
+        </div>
       </div>
     )
   }

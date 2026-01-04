@@ -76,3 +76,20 @@ export interface AIAnalysisResponse {
   aiAnalysis: AIAnalysis
   message: string
 }
+
+export interface PaginatedResponse<T> {
+  total: number
+  page: number
+  limit: number
+  hasMore: boolean
+  posts?: T[]
+  notifications?: T[]
+}
+
+export interface PaginatedPostsResponse extends PaginatedResponse<Post> {
+  posts: Post[]
+}
+
+export interface PaginatedNotificationsResponse extends PaginatedResponse<Notification> {
+  notifications: Notification[]
+}

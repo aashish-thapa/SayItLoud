@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import {
-  getFeed,
+  getUserPosts,
   followUser,
   unfollowUser,
   getProfile,
@@ -11,7 +11,7 @@ import {
 } from '@/lib/api'
 import { Post, User } from '@/types'
 import { PostCard } from '@/components/feed/PostCard'
-import { Frown, CalendarDays, UserPlus } from 'lucide-react'
+import { Frown, CalendarDays, UserPlus, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { useAuth } from '@/contexts/AuthContext'
 import { PostCardSkeleton } from '@/components/feed/PostCardSkeleton'
@@ -23,7 +23,8 @@ interface ProfileClientProps {
   username: string
 }
 
-// A simple skeleton for the profile header
+const POSTS_PER_PAGE = 10
+
 function ProfileHeaderSkeleton() {
   return (
     <div className='bg-white rounded-2xl p-6 shadow-sm border animate-pulse'>
@@ -48,28 +49,63 @@ export default function ProfileClient({ username }: ProfileClientProps) {
   const [profile, setProfile] = React.useState<User | null>(null)
   const [posts, setPosts] = React.useState<Post[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
+  const [isLoadingPosts, setIsLoadingPosts] = React.useState(false)
+  const [isLoadingMore, setIsLoadingMore] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
+  const [page, setPage] = React.useState(1)
+  const [hasMore, setHasMore] = React.useState(true)
   const [modalContent, setModalContent] = React.useState<{
     title: string
     users: User['followers']
   } | null>(null)
 
+  const loadMoreRef = React.useRef<HTMLDivElement>(null)
+
   const isFollowing = React.useMemo(() => {
     return currentUser?.following?.some((f) => f._id === profile?._id) ?? false
   }, [currentUser?.following, profile?._id])
 
+  const loadPosts = React.useCallback(
+    async (userId: string, pageNum: number, append = false) => {
+      if (pageNum === 1) {
+        setIsLoadingPosts(true)
+      } else {
+        setIsLoadingMore(true)
+      }
+
+      try {
+        const response = await getUserPosts(userId, pageNum, POSTS_PER_PAGE)
+        if (append) {
+          setPosts((prev) => [...prev, ...response.posts])
+        } else {
+          setPosts(response.posts)
+        }
+        setHasMore(response.hasMore)
+        setPage(pageNum)
+      } catch (err) {
+        console.error('Failed to load posts:', err)
+      } finally {
+        setIsLoadingPosts(false)
+        setIsLoadingMore(false)
+      }
+    },
+    []
+  )
+
   React.useEffect(() => {
-    async function loadAllData() {
+    async function loadProfile() {
       if (!username) return
       setIsLoading(true)
       setError(null)
+      setPosts([])
+      setPage(1)
+      setHasMore(true)
+
       try {
         let profileData: User
-        // If viewing own profile, use the dedicated getProfile endpoint
         if (currentUser && currentUser.username === username) {
           profileData = await getProfile()
         } else {
-          // Otherwise, search for the user to get their ID, then full profile
           const users = await searchUsers(username)
           if (users.length === 0) {
             throw new Error('User not found.')
@@ -77,11 +113,7 @@ export default function ProfileClient({ username }: ProfileClientProps) {
           profileData = await getUserById(users[0]._id)
         }
         setProfile(profileData)
-
-        // Fetch posts for the displayed profile
-        const allPosts = await getFeed()
-        const userPosts = allPosts.filter((p) => p.user.username === username)
-        setPosts(userPosts)
+        await loadPosts(profileData._id, 1)
       } catch (e) {
         if (e instanceof Error) {
           setError(e.message)
@@ -93,10 +125,33 @@ export default function ProfileClient({ username }: ProfileClientProps) {
       }
     }
 
-    loadAllData()
-    // This effect should re-run when the user navigates to a new profile,
-    // or when the logged-in user's data might have changed.
-  }, [username, currentUser])
+    loadProfile()
+  }, [username, currentUser, loadPosts])
+
+  React.useEffect(() => {
+    if (
+      !loadMoreRef.current ||
+      !hasMore ||
+      isLoading ||
+      isLoadingPosts ||
+      isLoadingMore ||
+      !profile
+    )
+      return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
+          loadPosts(profile._id, page + 1, true)
+        }
+      },
+      { threshold: 0.1 }
+    )
+
+    observer.observe(loadMoreRef.current)
+
+    return () => observer.disconnect()
+  }, [hasMore, isLoading, isLoadingPosts, isLoadingMore, page, profile, loadPosts])
 
   const handleFollowToggle = async () => {
     if (!currentUser || !profile) return
@@ -107,12 +162,10 @@ export default function ProfileClient({ username }: ProfileClientProps) {
       } else {
         await followUser(profile._id)
       }
-      // Re-fetch the logged-in user's profile to get updated following list
       const updatedUser = await getProfile()
       updateUser(updatedUser)
     } catch (err) {
       console.error('Failed to toggle follow state:', err)
-      // Optionally show an error to the user
     }
   }
 
@@ -123,7 +176,6 @@ export default function ProfileClient({ username }: ProfileClientProps) {
   const isOwnProfile = currentUser?._id === profile?._id
 
   const handleProfileUpdate = (updatedUser: User) => {
-    // We only update the parts of the profile that could have changed
     setProfile((prev) => ({
       ...prev,
       ...updatedUser,
@@ -194,13 +246,10 @@ export default function ProfileClient({ username }: ProfileClientProps) {
             </div>
             <div className='mt-4 flex items-center justify-center sm:justify-start gap-2 text-sm text-muted-foreground'>
               <CalendarDays className='w-4 h-4' />
-              {/* The full user object with createdAt is not available here, so we omit it for now */}
-              {/* Joined {new Date(profile.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })} */}
             </div>
           </div>
         </div>
         <div className='mt-6 pt-6 border-t flex items-center justify-center sm:justify-start gap-6 text-sm'>
-          {/* The full user object with follower counts is not available here, so we show placeholders */}
           <button
             className='hover:underline'
             onClick={() =>
@@ -231,14 +280,31 @@ export default function ProfileClient({ username }: ProfileClientProps) {
       {/* User's Posts */}
       <h3 className='text-xl font-bold'>Posts</h3>
       <div className='space-y-6'>
-        {posts.length > 0 ? (
-          posts.map((post) => (
-            <PostCard
-              key={post._id}
-              post={post}
-              onPostDeleted={handlePostDeleted}
-            />
-          ))
+        {isLoadingPosts ? (
+          <>
+            <PostCardSkeleton />
+            <PostCardSkeleton />
+          </>
+        ) : posts.length > 0 ? (
+          <>
+            {posts.map((post) => (
+              <PostCard
+                key={post._id}
+                post={post}
+                onPostDeleted={handlePostDeleted}
+              />
+            ))}
+
+            {/* Load more trigger */}
+            <div ref={loadMoreRef} className='h-10 flex items-center justify-center'>
+              {isLoadingMore && (
+                <Loader2 className='w-6 h-6 animate-spin text-gray-400' />
+              )}
+              {!hasMore && posts.length > 0 && (
+                <p className='text-sm text-gray-400'>No more posts</p>
+              )}
+            </div>
+          </>
         ) : (
           <div className='bg-white rounded-2xl border border-gray-200/80 p-8 text-center'>
             <p className='text-muted-foreground font-medium'>

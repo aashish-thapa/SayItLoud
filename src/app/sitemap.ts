@@ -6,9 +6,9 @@ export const dynamic = 'force-dynamic'
 const URL = 'https://sayitloud.vercel.app'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  // Fetch all posts
-  const posts = await getAllPosts()
-  const postUrls = posts.map((post) => ({
+  // Fetch posts (using a high limit to get most posts for sitemap)
+  const postsResponse = await getAllPosts(1, 100)
+  const postUrls = postsResponse.posts.map((post) => ({
     url: `${URL}/post/${post._id}`,
     lastModified: new Date(post.updatedAt),
     changeFrequency: 'weekly' as const,

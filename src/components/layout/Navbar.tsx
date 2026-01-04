@@ -30,9 +30,9 @@ export function Navbar() {
   React.useEffect(() => {
     if (!user) return
     // Fetch initial notification count
-    getNotifications()
+    getNotifications(1, 50)
       .then((data) => {
-        setUnreadCount(data.filter((n) => !n.read).length)
+        setUnreadCount(data.notifications.filter((n) => !n.read).length)
       })
       .catch((err) =>
         console.error('Failed to fetch initial notification count:', err)

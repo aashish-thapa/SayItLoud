@@ -46,19 +46,19 @@ export function FollowSuggestionsWidget() {
 
   if (isLoading) {
     return (
-      <div className='bg-white p-4 rounded-2xl shadow-sm border animate-pulse'>
-        <div className='h-5 bg-gray-200 rounded w-1/2 mb-4'></div>
+      <div className='bg-card p-4 rounded-2xl shadow-sm border border-border animate-pulse'>
+        <div className='h-5 bg-muted rounded w-1/2 mb-4'></div>
         <div className='space-y-4'>
           {[...Array(3)].map((_, i) => (
             <div key={i} className='flex items-center justify-between'>
               <div className='flex items-center gap-3'>
-                <div className='w-10 h-10 rounded-full bg-gray-200'></div>
+                <div className='w-10 h-10 rounded-full bg-muted'></div>
                 <div className='space-y-2'>
-                  <div className='h-4 bg-gray-200 rounded w-24'></div>
-                  <div className='h-3 bg-gray-200 rounded w-16'></div>
+                  <div className='h-4 bg-muted rounded w-24'></div>
+                  <div className='h-3 bg-muted rounded w-16'></div>
                 </div>
               </div>
-              <div className='h-8 bg-gray-200 rounded w-24'></div>
+              <div className='h-8 bg-muted rounded w-20'></div>
             </div>
           ))}
         </div>
@@ -67,23 +67,23 @@ export function FollowSuggestionsWidget() {
   }
 
   return (
-    <div className='bg-white p-4 rounded-2xl shadow-sm border'>
-      <h3 className='font-bold text-lg mb-4'>Who to Follow</h3>
+    <div className='bg-card p-4 rounded-2xl shadow-sm border border-border'>
+      <h3 className='font-bold text-lg mb-4 text-card-foreground'>Who to Follow</h3>
       {allSuggestions.length > 0 ? (
         <>
           <ul className='space-y-4'>
             {displayedSuggestions.map((sugg) => (
-              <li key={sugg._id} className='flex items-center justify-between'>
-                <Link href={`/profile/${sugg.username}`} className='group'>
+              <li key={sugg._id} className='flex items-center justify-between gap-2'>
+                <Link href={`/profile/${sugg.username}`} className='group min-w-0 flex-1'>
                   <div className='flex items-center gap-3'>
                     <div className='w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold flex-shrink-0'>
                       {sugg.username.charAt(0).toUpperCase()}
                     </div>
-                    <div>
-                      <p className='font-bold group-hover:underline'>
+                    <div className='min-w-0 flex-1'>
+                      <p className='font-bold group-hover:underline text-card-foreground truncate'>
                         {sugg.username}
                       </p>
-                      <p className='text-sm text-muted-foreground'>
+                      <p className='text-sm text-muted-foreground truncate'>
                         @{sugg.username}
                       </p>
                     </div>
@@ -95,8 +95,8 @@ export function FollowSuggestionsWidget() {
                   className='flex-shrink-0'
                   onClick={() => handleFollow(sugg._id)}
                 >
-                  <UserPlus className='w-4 h-4 mr-2' />
-                  Follow
+                  <UserPlus className='w-4 h-4' />
+                  <span className='hidden xl:inline ml-2'>Follow</span>
                 </Button>
               </li>
             ))}

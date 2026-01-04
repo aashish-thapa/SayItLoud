@@ -27,18 +27,18 @@ const POSTS_PER_PAGE = 10
 
 function ProfileHeaderSkeleton() {
   return (
-    <div className='bg-white rounded-2xl p-6 shadow-sm border animate-pulse'>
+    <div className='bg-card rounded-2xl p-6 shadow-sm border border-border animate-pulse'>
       <div className='flex items-center gap-6'>
-        <div className='w-24 h-24 rounded-full bg-gray-200'></div>
+        <div className='w-24 h-24 rounded-full bg-muted'></div>
         <div className='space-y-3'>
-          <div className='h-6 bg-gray-200 rounded w-48'></div>
-          <div className='h-4 bg-gray-200 rounded w-32'></div>
-          <div className='h-4 bg-gray-200 rounded w-40'></div>
+          <div className='h-6 bg-muted rounded w-48'></div>
+          <div className='h-4 bg-muted rounded w-32'></div>
+          <div className='h-4 bg-muted rounded w-40'></div>
         </div>
       </div>
       <div className='mt-4 flex items-center gap-6'>
-        <div className='h-4 bg-gray-200 rounded w-20'></div>
-        <div className='h-4 bg-gray-200 rounded w-20'></div>
+        <div className='h-4 bg-muted rounded w-20'></div>
+        <div className='h-4 bg-muted rounded w-20'></div>
       </div>
     </div>
   )
@@ -193,9 +193,9 @@ export default function ProfileClient({ username }: ProfileClientProps) {
 
   if (error || !profile) {
     return (
-      <div className='bg-white rounded-2xl border border-gray-200/80 p-8 text-center'>
-        <Frown className='w-16 h-16 mx-auto text-gray-300' />
-        <h2 className='mt-4 text-xl font-bold'>Could not load profile</h2>
+      <div className='bg-card rounded-2xl border border-border p-8 text-center'>
+        <Frown className='w-16 h-16 mx-auto text-muted-foreground' />
+        <h2 className='mt-4 text-xl font-bold text-card-foreground'>Could not load profile</h2>
         <p className='mt-2 text-muted-foreground'>
           {error || 'This user may not exist.'}
         </p>
@@ -206,7 +206,7 @@ export default function ProfileClient({ username }: ProfileClientProps) {
   return (
     <div className='space-y-8'>
       {/* Profile Header */}
-      <div className='bg-white rounded-2xl p-4 sm:p-6 shadow-sm border'>
+      <div className='bg-card rounded-2xl p-4 sm:p-6 shadow-sm border border-border'>
         <div className='flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6'>
           <div className='w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-5xl relative overflow-hidden flex-shrink-0 mx-auto sm:mx-0'>
             {profile.profilePicture ? (
@@ -223,7 +223,7 @@ export default function ProfileClient({ username }: ProfileClientProps) {
           <div className='flex-1 text-center sm:text-left'>
             <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between'>
               <div>
-                <h2 className='text-2xl font-bold'>{profile.username}</h2>
+                <h2 className='text-2xl font-bold text-card-foreground'>{profile.username}</h2>
                 <p className='text-muted-foreground'>@{profile.username}</p>
               </div>
               <div className='mt-4 sm:mt-0'>
@@ -249,7 +249,7 @@ export default function ProfileClient({ username }: ProfileClientProps) {
             </div>
           </div>
         </div>
-        <div className='mt-6 pt-6 border-t flex items-center justify-center sm:justify-start gap-6 text-sm'>
+        <div className='mt-6 pt-6 border-t border-border flex items-center justify-center sm:justify-start gap-6 text-sm text-card-foreground'>
           <button
             className='hover:underline'
             onClick={() =>
@@ -298,15 +298,15 @@ export default function ProfileClient({ username }: ProfileClientProps) {
             {/* Load more trigger */}
             <div ref={loadMoreRef} className='h-10 flex items-center justify-center'>
               {isLoadingMore && (
-                <Loader2 className='w-6 h-6 animate-spin text-gray-400' />
+                <Loader2 className='w-6 h-6 animate-spin text-muted-foreground' />
               )}
               {!hasMore && posts.length > 0 && (
-                <p className='text-sm text-gray-400'>No more posts</p>
+                <p className='text-sm text-muted-foreground'>No more posts</p>
               )}
             </div>
           </>
         ) : (
-          <div className='bg-white rounded-2xl border border-gray-200/80 p-8 text-center'>
+          <div className='bg-card rounded-2xl border border-border p-8 text-center'>
             <p className='text-muted-foreground font-medium'>
               This user hasn&apos;t posted anything yet.
             </p>

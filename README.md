@@ -1,7 +1,3 @@
-# Backend Documentation for Frontend Features
-BACKEND: (https://github.com/aashish-thapa/BackendSecondBrain)
-This document outlines the features currently implemented in the frontend that do not have corresponding dedicated API endpoints. This guide is intended to help backend developers understand the data requirements and frontend implementation details.
-(I know I can describe API endpoint in the Next itself but I did not plan to make an web app)
 ## 1. User Profile Page
 
 ### Description

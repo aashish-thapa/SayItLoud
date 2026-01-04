@@ -90,7 +90,7 @@ export function CreatePostForm({ onPostCreated }: CreatePostFormProps) {
   }
 
   return (
-    <div className='bg-white rounded-2xl shadow-sm border border-gray-200/80 p-5'>
+    <div className='bg-card rounded-2xl shadow-sm border border-border p-5'>
       <form onSubmit={handleSubmit} className='flex items-start gap-4'>
         <Link href={`/profile/${user.username}`}>
           <div className='w-11 h-11 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-lg flex-shrink-0 relative overflow-hidden'>
@@ -114,7 +114,7 @@ export function CreatePostForm({ onPostCreated }: CreatePostFormProps) {
             onChange={(e) => setContent(e.target.value)}
             disabled={isLoading}
             rows={3}
-            className='bg-gray-50/50 border-gray-200/90 focus:bg-white'
+            className='bg-secondary/50 border-border focus:bg-card'
           />
           {imagePreview && (
             <div className='relative mt-3'>

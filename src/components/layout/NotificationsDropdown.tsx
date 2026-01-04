@@ -94,9 +94,9 @@ export function NotificationsDropdown({
   }
 
   return (
-    <div className='absolute top-full right-0 mt-2 w-80 md:w-96 bg-white rounded-2xl shadow-lg border z-50'>
-      <div className='p-4 flex items-center justify-between border-b'>
-        <h3 className='font-bold text-lg'>Notifications</h3>
+    <div className='absolute top-full right-0 mt-2 w-80 md:w-96 bg-card rounded-2xl shadow-lg border border-border z-50'>
+      <div className='p-4 flex items-center justify-between border-b border-border'>
+        <h3 className='font-bold text-lg text-card-foreground'>Notifications</h3>
         <Button
           variant='link'
           size='sm'
@@ -117,12 +117,12 @@ export function NotificationsDropdown({
             No notifications yet.
           </p>
         ) : (
-          <div className='divide-y'>
+          <div className='divide-y divide-border'>
             {notifications.map((n) => (
               <NotificationLink key={n._id} notification={n}>
                 <div
                   className={cn(
-                    'p-3 flex items-start gap-4 hover:bg-gray-50',
+                    'p-3 flex items-start gap-4 hover:bg-accent',
                     !n.read && 'bg-primary/5'
                   )}
                   onClick={() => !n.read && handleMarkAsRead(n._id)}
@@ -131,7 +131,7 @@ export function NotificationsDropdown({
                     <NotificationIcon type={n.type} />
                   </div>
                   <div className='flex-1'>
-                    <p className='text-sm'>
+                    <p className='text-sm text-card-foreground'>
                       <span className='font-bold'>{n.initiator.username}</span>{' '}
                       {n.message}
                     </p>

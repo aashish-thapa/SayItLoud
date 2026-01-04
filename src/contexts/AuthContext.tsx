@@ -15,6 +15,43 @@ interface AuthContextType {
 
 const AuthContext = React.createContext<AuthContextType | undefined>(undefined)
 
+// Check if we're in a browser with proper localStorage support
+const isBrowser = (): boolean => {
+  return (
+    typeof window !== 'undefined' &&
+    typeof window.localStorage !== 'undefined' &&
+    typeof window.localStorage.getItem === 'function'
+  )
+}
+
+// Safe localStorage access
+const getLocalStorage = (key: string): string | null => {
+  if (!isBrowser()) return null
+  try {
+    return window.localStorage.getItem(key)
+  } catch {
+    return null
+  }
+}
+
+const setLocalStorage = (key: string, value: string): void => {
+  if (!isBrowser()) return
+  try {
+    window.localStorage.setItem(key, value)
+  } catch {
+    // Ignore errors (e.g., private browsing mode)
+  }
+}
+
+const removeLocalStorage = (key: string): void => {
+  if (!isBrowser()) return
+  try {
+    window.localStorage.removeItem(key)
+  } catch {
+    // Ignore errors
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUserState] = React.useState<AuthenticatedUser | null>(null)
   const [token, setToken] = React.useState<string | null>(null)
@@ -22,8 +59,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   React.useEffect(() => {
     try {
-      const storedToken = localStorage.getItem('token')
-      const storedUser = localStorage.getItem('user')
+      const storedToken = getLocalStorage('token')
+      const storedUser = getLocalStorage('user')
       if (storedToken && storedUser) {
         setToken(storedToken)
         setUserState(JSON.parse(storedUser))
@@ -34,18 +71,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const login = React.useCallback((userData: AuthenticatedUser) => {
-    localStorage.setItem('token', userData.token as string)
-    localStorage.setItem('user', JSON.stringify(userData))
+    setLocalStorage('token', userData.token as string)
+    setLocalStorage('user', JSON.stringify(userData))
     setToken(userData.token as string)
     setUserState(userData)
   }, [])
 
   const updateUser = React.useCallback((userData: AuthenticatedUser | null) => {
     if (userData) {
-      localStorage.setItem('user', JSON.stringify(userData))
+      setLocalStorage('user', JSON.stringify(userData))
       setUserState(userData)
     } else {
-      localStorage.removeItem('user')
+      removeLocalStorage('user')
       setUserState(null)
     }
   }, [])
@@ -53,12 +90,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const setUser = React.useCallback(
     (userData: Partial<AuthenticatedUser> | null) => {
       if (userData) {
-        const currentUserData = JSON.parse(localStorage.getItem('user') || '{}')
+        const currentUserData = JSON.parse(getLocalStorage('user') || '{}')
         const newUserData = { ...currentUserData, ...userData }
-        localStorage.setItem('user', JSON.stringify(newUserData))
+        setLocalStorage('user', JSON.stringify(newUserData))
         setUserState(newUserData)
       } else {
-        localStorage.removeItem('user')
+        removeLocalStorage('user')
         setUserState(null)
       }
     },
@@ -66,8 +103,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   )
 
   const logout = React.useCallback(() => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
+    removeLocalStorage('token')
+    removeLocalStorage('user')
     setToken(null)
     setUserState(null)
   }, [])

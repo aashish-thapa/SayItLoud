@@ -132,7 +132,7 @@ export function PostCard({ post, onPostDeleted }: PostCardProps) {
   return (
     <div
       className={cn(
-        'bg-white rounded-2xl shadow-sm border border-gray-200/80 transition-all hover:shadow-md relative',
+        'bg-card rounded-2xl shadow-sm border border-border transition-all hover:shadow-md relative',
         isToxic && 'border-red-500/50'
       )}
     >
@@ -163,7 +163,7 @@ export function PostCard({ post, onPostDeleted }: PostCardProps) {
                 href={`/profile/${post.user.username}`}
                 className='group flex-shrink'
               >
-                <p className='font-bold group-hover:underline truncate'>
+                <p className='font-bold group-hover:underline truncate text-card-foreground'>
                   {post.user.username}
                 </p>
                 <p className='text-sm text-muted-foreground truncate'>
@@ -176,7 +176,7 @@ export function PostCard({ post, onPostDeleted }: PostCardProps) {
                 })}
               </p>
             </div>
-            <div className='mt-3 text-base text-foreground/90 whitespace-pre-wrap break-words'>
+            <div className='mt-3 text-base text-card-foreground/90 whitespace-pre-wrap break-words'>
               {isLongPost && !isExpanded ? (
                 <div>
                   {formatContent(post.content.substring(0, 280))}...
@@ -202,7 +202,7 @@ export function PostCard({ post, onPostDeleted }: PostCardProps) {
               )}
             </div>
             {post.image && !imageError && (
-              <div className='mt-4 relative overflow-hidden rounded-xl border'>
+              <div className='mt-4 relative overflow-hidden rounded-xl border border-border'>
                 <Image
                   src={post.image}
                   alt='Post image'
@@ -245,11 +245,11 @@ export function PostCard({ post, onPostDeleted }: PostCardProps) {
             {factCheck && (
               <div
                 className={cn(
-                  'text-xs flex items-center gap-2  py-1 px-2.5 rounded-full',
+                  'text-xs flex items-center gap-2 py-1 px-2.5 rounded-full',
                   {
-                    'bg-green-100 text-green-800': factCheck === 'support',
-                    'bg-red-100 text-red-800': factCheck === 'oppose',
-                    'bg-gray-100 text-gray-800': factCheck === 'neutral',
+                    'bg-green-500/20 text-green-600 dark:text-green-400': factCheck === 'support',
+                    'bg-red-500/20 text-red-600 dark:text-red-400': factCheck === 'oppose',
+                    'bg-muted text-muted-foreground': factCheck === 'neutral',
                   }
                 )}
               >

@@ -5,17 +5,47 @@ import {
   AIAnalysisResponse,
   Notification,
   User,
+  PaginatedPostsResponse,
+  PaginatedNotificationsResponse,
 } from '@/types'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
+const API_URL = '/api'
+
+// Check if we're in a browser with proper localStorage support
+const isBrowser = (): boolean => {
+  return (
+    typeof window !== 'undefined' &&
+    typeof window.localStorage !== 'undefined' &&
+    typeof window.localStorage.getItem === 'function'
+  )
+}
+
+// Safe localStorage helpers
+const getToken = (): string | null => {
+  if (!isBrowser()) return null
+  try {
+    return window.localStorage.getItem('token')
+  } catch {
+    return null
+  }
+}
+
+const clearAuth = (): void => {
+  if (!isBrowser()) return
+  try {
+    window.localStorage.removeItem('token')
+    window.localStorage.removeItem('user')
+  } catch {
+    // Ignore errors
+  }
+}
 
 async function fetcher(
   url: string,
   options: RequestInit = {},
   isFormData = false
 ) {
-  const token =
-    typeof window !== 'undefined' ? localStorage.getItem('token') : null
+  const token = getToken()
   const headers = new Headers(options.headers)
   if (!isFormData) {
     headers.set('Content-Type', 'application/json')
@@ -31,8 +61,7 @@ async function fetcher(
     if (response.status === 401) {
       // Token is invalid or expired.
       // Clear local storage and force a reload to redirect to login.
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
+      clearAuth()
       // Redirect to login page
       if (typeof window !== 'undefined') {
         window.location.href = '/login'
@@ -117,12 +146,26 @@ export async function unfollowUser(userId: string): Promise<AuthenticatedUser> {
 }
 
 // II. Post Endpoints
-export async function getFeed(): Promise<Post[]> {
-  return fetcher(`${API_URL}/posts/feed`)
+export async function getFeed(
+  page = 1,
+  limit = 10
+): Promise<PaginatedPostsResponse> {
+  return fetcher(`${API_URL}/posts/feed?page=${page}&limit=${limit}`)
 }
 
-export async function getAllPosts(): Promise<Post[]> {
-  return fetcher(`${API_URL}/posts`)
+export async function getAllPosts(
+  page = 1,
+  limit = 10
+): Promise<PaginatedPostsResponse> {
+  return fetcher(`${API_URL}/posts?page=${page}&limit=${limit}`)
+}
+
+export async function getUserPosts(
+  userId: string,
+  page = 1,
+  limit = 10
+): Promise<PaginatedPostsResponse> {
+  return fetcher(`${API_URL}/posts/user/${userId}?page=${page}&limit=${limit}`)
 }
 
 export async function getPostById(postId: string): Promise<Post> {
@@ -210,8 +253,11 @@ export async function analyzePost(postId: string): Promise<AIAnalysisResponse> {
 }
 
 // IV. Notification Endpoints
-export async function getNotifications(): Promise<Notification[]> {
-  return fetcher(`${API_URL}/notifications`)
+export async function getNotifications(
+  page = 1,
+  limit = 20
+): Promise<PaginatedNotificationsResponse> {
+  return fetcher(`${API_URL}/notifications?page=${page}&limit=${limit}`)
 }
 
 export async function markNotificationAsRead(

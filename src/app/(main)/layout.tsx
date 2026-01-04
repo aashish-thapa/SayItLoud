@@ -1,42 +1,12 @@
-'use client'
-
 import { Navbar } from '@/components/layout/Navbar'
 import { LeftSidebar } from '@/components/layout/LeftSidebar'
 import { RightSidebar } from '@/components/layout/RightSidebar'
-import * as React from 'react'
 
 interface MainLayoutProps {
   children: React.ReactNode
 }
 
 export default function MainLayout({ children }: MainLayoutProps) {
-  React.useEffect(() => {
-    const API_URL =
-      process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
-    const BASE_URL = API_URL.replace('/api', '')
-
-    const keepServerAwake = () => {
-      fetch(BASE_URL)
-        .then((res) => {
-          if (res.ok) {
-            console.log('Server pinged successfully.')
-          } else {
-            console.error('Failed to ping server.')
-          }
-        })
-        .catch((err) => console.error('Error pinging server:', err))
-    }
-
-    // Ping immediately on load
-    keepServerAwake()
-
-    // And then every 10 minutes
-    const intervalId = setInterval(keepServerAwake, 13 * 60 * 1000)
-
-    // Clear interval on component unmount
-    return () => clearInterval(intervalId)
-  }, [])
-
   return (
     <div className='bg-gray-50 min-h-screen'>
       <Navbar />

@@ -1,0 +1,36 @@
+name: Scheduled Bot Posts
+
+on:
+  schedule:
+    # Webz.io bot - every 45 minutes (32 calls/day = 960/month, under 1000 limit)
+    - cron: '*/45 * * * *'
+    # News bot - every 40 minutes
+    - cron: '*/40 * * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  webz-bot:
+    if: github.event.schedule == '*/45 * * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Webz.io Bot
+        run: |
+          curl -X GET "${{ secrets.SITE_URL }}/api/cron/webz-bot" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            --fail --silent --show-error
+        env:
+          SITE_URL: ${{ secrets.SITE_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+
+  news-bot:
+    if: github.event.schedule == '*/40 * * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger News Bot
+        run: |
+          curl -X GET "${{ secrets.SITE_URL }}/api/cron/bot-post" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            --fail --silent --show-error
+        env:
+          SITE_URL: ${{ secrets.SITE_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}

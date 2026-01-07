@@ -10,11 +10,11 @@ const HF_EMOTION_MODEL =
 const HF_TOXICITY_MODEL =
   process.env.HF_TOXICITY_MODEL || 'cardiffnlp/twitter-roberta-base-offensive';
 
-const HF_INFERENCE_API_BASE_URL = 'https://api-inference.huggingface.co/models/';
+const HF_INFERENCE_API_BASE_URL = 'https://router.huggingface.co/hf-inference/models/';
 
-// Gemini AI Configuration
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+// Local AI Backend Configuration (replaces Gemini)
+const LOCAL_AI_BACKEND_URL = process.env.LOCAL_AI_BACKEND_URL || 'http://127.0.0.1:8000';
+const LOCAL_AI_API_KEY = process.env.LOCAL_AI_API_KEY;
 
 // Helper to call Hugging Face Inference API
 const callHuggingFaceAPI = async (modelId: string, inputs: string) => {
@@ -124,6 +124,7 @@ interface GeminiResult {
   summary: string;
   category: string;
   factCheck: 'support' | 'neutral' | 'oppose';
+  factCheckReason: string;
 }
 
 /**
@@ -134,8 +135,8 @@ export const performAIAnalysisOnPost = async (postId: string) => {
     console.error('AI service not configured: Hugging Face API token missing.');
     return null;
   }
-  if (!GEMINI_API_KEY) {
-    console.error('AI service not configured: Gemini API key missing.');
+  if (!LOCAL_AI_API_KEY) {
+    console.error('AI service not configured: LOCAL_AI_API_KEY missing.');
     return null;
   }
 
@@ -160,6 +161,7 @@ export const performAIAnalysisOnPost = async (postId: string) => {
     let summary = '';
     let category = 'Uncategorized';
     let factCheck: 'support' | 'neutral' | 'oppose' | 'Unknown' = 'Unknown';
+    let factCheckReason = '';
 
     // Concurrent API Calls
     const [sentimentPromise, emotionPromise, toxicityPromise, geminiPromise] =
@@ -168,101 +170,28 @@ export const performAIAnalysisOnPost = async (postId: string) => {
         callHuggingFaceAPI(HF_EMOTION_MODEL, postContent),
         callHuggingFaceAPI(HF_TOXICITY_MODEL, postContent),
         (async (): Promise<GeminiResult> => {
-          const geminiCategories = [
-            'News',
-            'Sports',
-            'Technology',
-            'Entertainment',
-            'Politics',
-            'Art',
-            'Science',
-            'Education',
-            'Lifestyle',
-            'Travel',
-            'Food',
-            'Health',
-            'Personal Update',
-            'Opinion',
-            'Humor',
-            'Other',
-          ];
-          const geminiPrompt = `Analyze the following social media post.
-        1. Extract 3-5 distinct, concise, specific, and highly relevant keywords or short phrases as topics. These should be like hashtags you'd find on Twitter (e.g., ["AI", "MachineLearning", "WebDev"]).
-        2. Provide a concise summary of the post (max 50 words).
-        3. Classify the post into ONE of the following categories: ${geminiCategories.join(', ')}. If none fit well, use "Other".
-        4. **Fact Check**: Based on common knowledge and general understanding, assess the factual accuracy of the post.
-           - If the post's core factual claims are almost certainly true/supported by widely accepted information, return 'support'.
-           - If the factual accuracy is uncertain, requires more context, or cannot be determined with high confidence, return 'neutral'.
-           - If the post contains statements that directly contradict widely accepted facts, return 'oppose'.
-
-        Provide the output in JSON format like this:
-        {
-          "topics": ["topic1", "topic2", "topic3"],
-          "summary": "Concise summary of the post.",
-          "category": "CategoryName",
-          "factCheck": "support|neutral|oppose"
-        }
-
-        Post: "${postContent}"`;
-
-          const geminiPayload = {
-            contents: [{ role: 'user', parts: [{ text: geminiPrompt }] }],
-            generationConfig: {
-              responseMimeType: 'application/json',
-              responseSchema: {
-                type: 'OBJECT',
-                properties: {
-                  topics: {
-                    type: 'ARRAY',
-                    items: { type: 'STRING' },
-                  },
-                  summary: { type: 'STRING' },
-                  category: {
-                    type: 'STRING',
-                    enum: geminiCategories.concat('Other'),
-                  },
-                  factCheck: {
-                    type: 'STRING',
-                    enum: ['support', 'neutral', 'oppose'],
-                  },
-                },
-                required: ['topics', 'summary', 'category', 'factCheck'],
-              },
-            },
-          };
-
-          const geminiResponse = await fetch(GEMINI_API_URL, {
+          const response = await fetch(`${LOCAL_AI_BACKEND_URL}/api/analyze`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
+              'X-API-Key': LOCAL_AI_API_KEY || '',
             },
-            body: JSON.stringify(geminiPayload),
+            body: JSON.stringify({ content: postContent }),
           });
 
-          if (!geminiResponse.ok) {
-            const geminiErrorText = await geminiResponse.text();
+          if (!response.ok) {
+            const errorText = await response.text();
             console.error(
-              'Gemini API Error:',
-              geminiResponse.status,
-              geminiErrorText
+              'Local AI Backend Error:',
+              response.status,
+              errorText
             );
             throw new Error(
-              `Gemini API error (${geminiResponse.status}): ${geminiErrorText}`
+              `Local AI Backend error (${response.status}): ${errorText}`
             );
           }
 
-          const geminiResult = await geminiResponse.json();
-          if (
-            geminiResult.candidates &&
-            geminiResult.candidates.length > 0 &&
-            geminiResult.candidates[0].content &&
-            geminiResult.candidates[0].content.parts &&
-            geminiResult.candidates[0].content.parts.length > 0
-          ) {
-            const jsonString = geminiResult.candidates[0].content.parts[0].text;
-            return JSON.parse(jsonString);
-          }
-          throw new Error('No valid Gemini response found.');
+          return await response.json();
         })(),
       ]);
 
@@ -315,12 +244,14 @@ export const performAIAnalysisOnPost = async (postId: string) => {
       summary = geminiPromise.value.summary || 'AI summary unavailable.';
       category = geminiPromise.value.category || 'Uncategorized';
       factCheck = geminiPromise.value.factCheck || 'Unknown';
+      factCheckReason = geminiPromise.value.factCheckReason || '';
     } else {
-      console.error('Gemini analysis failed:', geminiPromise.reason);
+      console.error('Local AI analysis failed:', geminiPromise.reason);
       topics = ['AI Error'];
       summary = 'AI summary unavailable.';
       category = 'Error';
       factCheck = 'Unknown';
+      factCheckReason = 'Analysis failed.';
     }
 
     // Override sentiment if toxicity is detected
@@ -337,6 +268,7 @@ export const performAIAnalysisOnPost = async (postId: string) => {
       summary,
       category,
       factCheck,
+      factCheckReason,
     };
 
     // Save the AI analysis results back to the post document

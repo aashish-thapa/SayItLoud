@@ -22,6 +22,7 @@ export interface IAIAnalysis {
   summary: string;
   category: string;
   factCheck: 'support' | 'neutral' | 'oppose' | 'Unknown';
+  factCheckReason?: string;
 }
 
 export interface IPost extends Document {
@@ -77,6 +78,10 @@ const aiAnalysisSchema = new mongoose.Schema(
       type: String,
       enum: ['support', 'neutral', 'oppose', 'Unknown'],
       default: 'Unknown',
+    },
+    factCheckReason: {
+      type: String,
+      default: '',
     },
   },
   {

@@ -13,6 +13,7 @@ import {
   ThumbsUp,
   ThumbsDown,
   Minus,
+  Info,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import * as React from 'react'
@@ -124,6 +125,7 @@ export function PostCard({ post, onPostDeleted }: PostCardProps) {
   const isToxic = post.aiAnalysis?.toxicity?.detected === true
   const isLongPost = post.content.length > 280
   const factCheck = post.aiAnalysis?.factCheck
+  const factCheckReason = post.aiAnalysis?.factCheckReason
 
   const toggleExpanded = () => {
     setIsExpanded(!isExpanded)
@@ -243,24 +245,36 @@ export function PostCard({ post, onPostDeleted }: PostCardProps) {
           </div>
           <div className='flex items-center gap-2 sm:gap-4'>
             {factCheck && (
-              <div
-                className={cn(
-                  'text-xs flex items-center gap-2 py-1 px-2.5 rounded-full',
-                  {
-                    'bg-green-500/20 text-green-600 dark:text-green-400': factCheck === 'support',
-                    'bg-red-500/20 text-red-600 dark:text-red-400': factCheck === 'oppose',
-                    'bg-muted text-muted-foreground': factCheck === 'neutral',
-                  }
+              <div className='relative group/factcheck'>
+                <div
+                  className={cn(
+                    'text-xs flex items-center gap-1.5 py-1 px-2.5 rounded-full cursor-help',
+                    {
+                      'bg-green-500/20 text-green-600 dark:text-green-400': factCheck === 'support',
+                      'bg-red-500/20 text-red-600 dark:text-red-400': factCheck === 'oppose',
+                      'bg-muted text-muted-foreground': factCheck === 'neutral',
+                    }
+                  )}
+                >
+                  {factCheck === 'support' && (
+                    <ThumbsUp className='w-3.5 h-3.5' />
+                  )}
+                  {factCheck === 'oppose' && (
+                    <ThumbsDown className='w-3.5 h-3.5' />
+                  )}
+                  {factCheck === 'neutral' && <Minus className='w-3.5 h-3.5' />}
+                  <span className='font-semibold capitalize'>{factCheck}</span>
+                  {factCheckReason && (
+                    <Info className='w-3 h-3 opacity-60' />
+                  )}
+                </div>
+                {factCheckReason && (
+                  <div className='absolute bottom-full right-0 mb-2 w-64 p-3 bg-popover text-popover-foreground text-xs rounded-lg shadow-lg border border-border opacity-0 invisible group-hover/factcheck:opacity-100 group-hover/factcheck:visible transition-all duration-200 z-50'>
+                    <div className='font-semibold mb-1 capitalize'>{factCheck}</div>
+                    <p className='text-muted-foreground leading-relaxed'>{factCheckReason}</p>
+                    <div className='absolute -bottom-1.5 right-4 w-3 h-3 bg-popover border-r border-b border-border rotate-45'></div>
+                  </div>
                 )}
-              >
-                {factCheck === 'support' && (
-                  <ThumbsUp className='w-3.5 h-3.5' />
-                )}
-                {factCheck === 'oppose' && (
-                  <ThumbsDown className='w-3.5 h-3.5' />
-                )}
-                {factCheck === 'neutral' && <Minus className='w-3.5 h-3.5' />}
-                <span className='font-semibold capitalize'>{factCheck}</span>
               </div>
             )}
             <div className='hidden sm:flex text-xs items-center gap-2 bg-secondary text-secondary-foreground py-1 px-2.5 rounded-full'>

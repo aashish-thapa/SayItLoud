@@ -43,7 +43,7 @@ export function SignupForm() {
     try {
       const user = await signup(formData)
       authLogin(user)
-      router.push('/feed')
+      router.push('/explore')
     } catch (error) {
       if (error instanceof Error) {
         setError(error.message)

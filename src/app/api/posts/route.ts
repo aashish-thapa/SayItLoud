@@ -98,9 +98,11 @@ export async function GET(request: NextRequest) {
         return !(engagement < 5 && ageMs < oneDayMs);
       });
 
-      // Sort: popular by score, new posts randomly shuffled
+      // Sort: popular by score, new posts by most recent first
       popularPosts.sort((a, b) => b.score - a.score);
-      newPosts.sort(() => Math.random() - 0.5);
+      newPosts.sort((a, b) =>
+        new Date(b.post.createdAt).getTime() - new Date(a.post.createdAt).getTime()
+      );
 
       // Interleave: 3 popular posts, then 1 new post
       const interleavedPosts: typeof regularPosts = [];

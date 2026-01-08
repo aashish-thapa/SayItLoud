@@ -10,6 +10,7 @@ export interface User {
     likedCategories: Record<string, number>
     likedTopics: Record<string, number>
   }
+  isAdmin?: boolean
 }
 
 export interface AuthenticatedUser extends User {
@@ -47,6 +48,8 @@ export interface Post {
   likes: string[]
   comments: Comment[]
   aiAnalysis: AIAnalysis
+  isPinned: boolean
+  pinnedAt?: string
   createdAt: string
   updatedAt: string
   relevanceScore?: number

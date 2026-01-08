@@ -41,7 +41,7 @@ function scorePostForDiscovery(post: IPost): number {
   return score;
 }
 
-// GET /api/posts - Get all posts with pagination (Explore - discovery focused)
+// GET /api/posts - Get all posts with pagination (Explore)
 export async function GET(request: NextRequest) {
   return withAuth(request, async (_req, authUser) => {
     try {
@@ -50,6 +50,7 @@ export async function GET(request: NextRequest) {
       const { searchParams } = new URL(request.url);
       const page = parseInt(searchParams.get('page') || '1', 10);
       const limit = parseInt(searchParams.get('limit') || '10', 10);
+      const sort = searchParams.get('sort') || 'recent'; // 'recent' or 'discover'
 
       // Fetch recent posts (last 14 days for explore)
       const posts = await Post.find({
@@ -65,62 +66,69 @@ export async function GET(request: NextRequest) {
         return post.isPinned || postUserId !== currentUserId;
       });
 
-      // Score posts
-      const scoredPosts = filteredPosts.map((post) => ({
-        post,
-        score: scorePostForDiscovery(post),
-      }));
-
-      // Separate pinned, popular, and new posts
-      const pinnedPosts = scoredPosts.filter((sp) => sp.post.isPinned);
-      const regularPosts = scoredPosts.filter((sp) => !sp.post.isPinned);
+      // Separate pinned posts
+      const pinnedPosts = filteredPosts.filter((p) => p.isPinned);
+      const regularPosts = filteredPosts.filter((p) => !p.isPinned);
 
       // Sort pinned by pinnedAt
       pinnedPosts.sort((a, b) => {
-        const aTime = a.post.pinnedAt ? new Date(a.post.pinnedAt).getTime() : 0;
-        const bTime = b.post.pinnedAt ? new Date(b.post.pinnedAt).getTime() : 0;
+        const aTime = a.pinnedAt ? new Date(a.pinnedAt).getTime() : 0;
+        const bTime = b.pinnedAt ? new Date(b.pinnedAt).getTime() : 0;
         return bTime - aTime;
       });
 
-      // Separate new posts (< 5 engagement, < 24 hours old) from popular posts
-      const now = Date.now();
-      const oneDayMs = 24 * 60 * 60 * 1000;
+      let sortedRegularPosts: typeof regularPosts;
 
-      const newPosts = regularPosts.filter((sp) => {
-        const engagement = (sp.post.likes?.length || 0) + (sp.post.comments?.length || 0);
-        const ageMs = now - new Date(sp.post.createdAt).getTime();
-        return engagement < 5 && ageMs < oneDayMs;
-      });
+      if (sort === 'recent') {
+        // Most recent first
+        sortedRegularPosts = [...regularPosts].sort((a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+      } else {
+        // Discovery algorithm with interleaving
+        const scoredPosts = regularPosts.map((post) => ({
+          post,
+          score: scorePostForDiscovery(post),
+        }));
 
-      const popularPosts = regularPosts.filter((sp) => {
-        const engagement = (sp.post.likes?.length || 0) + (sp.post.comments?.length || 0);
-        const ageMs = now - new Date(sp.post.createdAt).getTime();
-        return !(engagement < 5 && ageMs < oneDayMs);
-      });
+        const now = Date.now();
+        const oneDayMs = 24 * 60 * 60 * 1000;
 
-      // Sort: popular by score, new posts by most recent first
-      popularPosts.sort((a, b) => b.score - a.score);
-      newPosts.sort((a, b) =>
-        new Date(b.post.createdAt).getTime() - new Date(a.post.createdAt).getTime()
-      );
+        const newPosts = scoredPosts.filter((sp) => {
+          const engagement = (sp.post.likes?.length || 0) + (sp.post.comments?.length || 0);
+          const ageMs = now - new Date(sp.post.createdAt).getTime();
+          return engagement < 5 && ageMs < oneDayMs;
+        });
 
-      // Interleave: 3 popular posts, then 3 new posts
-      const interleavedPosts: typeof regularPosts = [];
-      let popIndex = 0;
-      let newIndex = 0;
+        const popularPosts = scoredPosts.filter((sp) => {
+          const engagement = (sp.post.likes?.length || 0) + (sp.post.comments?.length || 0);
+          const ageMs = now - new Date(sp.post.createdAt).getTime();
+          return !(engagement < 5 && ageMs < oneDayMs);
+        });
 
-      while (popIndex < popularPosts.length || newIndex < newPosts.length) {
-        // Add up to 3 popular posts
-        for (let i = 0; i < 3 && popIndex < popularPosts.length; i++) {
-          interleavedPosts.push(popularPosts[popIndex++]);
+        popularPosts.sort((a, b) => b.score - a.score);
+        newPosts.sort((a, b) =>
+          new Date(b.post.createdAt).getTime() - new Date(a.post.createdAt).getTime()
+        );
+
+        // Interleave: 3 popular posts, then 3 new posts
+        const interleavedPosts: typeof scoredPosts = [];
+        let popIndex = 0;
+        let newIndex = 0;
+
+        while (popIndex < popularPosts.length || newIndex < newPosts.length) {
+          for (let i = 0; i < 3 && popIndex < popularPosts.length; i++) {
+            interleavedPosts.push(popularPosts[popIndex++]);
+          }
+          for (let i = 0; i < 3 && newIndex < newPosts.length; i++) {
+            interleavedPosts.push(newPosts[newIndex++]);
+          }
         }
-        // Add up to 3 new posts
-        for (let i = 0; i < 3 && newIndex < newPosts.length; i++) {
-          interleavedPosts.push(newPosts[newIndex++]);
-        }
+
+        sortedRegularPosts = interleavedPosts.map((sp) => sp.post);
       }
 
-      const allSorted = [...pinnedPosts, ...interleavedPosts];
+      const allSorted = [...pinnedPosts, ...sortedRegularPosts];
 
       // Apply pagination
       const total = allSorted.length;
@@ -128,10 +136,7 @@ export async function GET(request: NextRequest) {
       const paginatedPosts = allSorted.slice(skip, skip + limit);
 
       // Convert to response format
-      const responsePosts = paginatedPosts.map((sp) => ({
-        ...sp.post.toObject(),
-        relevanceScore: sp.score,
-      }));
+      const responsePosts = paginatedPosts.map((post) => post.toObject());
 
       return NextResponse.json({
         posts: responsePosts,

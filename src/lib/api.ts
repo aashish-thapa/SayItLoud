@@ -155,9 +155,10 @@ export async function getFeed(
 
 export async function getAllPosts(
   page = 1,
-  limit = 10
+  limit = 10,
+  sort: 'recent' | 'discover' = 'recent'
 ): Promise<PaginatedPostsResponse> {
-  return fetcher(`${API_URL}/posts?page=${page}&limit=${limit}`)
+  return fetcher(`${API_URL}/posts?page=${page}&limit=${limit}&sort=${sort}`)
 }
 
 export async function getUserPosts(

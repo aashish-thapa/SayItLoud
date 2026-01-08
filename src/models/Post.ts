@@ -33,6 +33,8 @@ export interface IPost extends Document {
   likes: mongoose.Types.ObjectId[];
   comments: IComment[];
   aiAnalysis: IAIAnalysis;
+  isPinned: boolean;
+  pinnedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -111,6 +113,13 @@ const postSchema = new mongoose.Schema<IPost>(
     ],
     comments: [commentSchema],
     aiAnalysis: aiAnalysisSchema,
+    isPinned: {
+      type: Boolean,
+      default: false,
+    },
+    pinnedAt: {
+      type: Date,
+    },
   },
   {
     timestamps: true,

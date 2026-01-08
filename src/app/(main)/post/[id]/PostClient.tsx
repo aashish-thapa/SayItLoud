@@ -58,7 +58,7 @@ export default function PostClient({ id }: PostClientProps) {
   const handlePostDeleted = () => {
     // Redirect user away after post deletion, maybe to the feed
     // This is a simplified handler. A more robust solution might use useRouter
-    window.location.href = '/feed'
+    window.location.href = '/explore'
   }
 
   if (isLoading) {
@@ -80,11 +80,11 @@ export default function PostClient({ id }: PostClientProps) {
   return (
     <div className='space-y-6'>
       <Link
-        href='/feed'
+        href='/explore'
         className='flex items-center gap-2 text-sm text-muted-foreground hover:text-primary mb-4'
       >
         <ArrowLeft className='w-4 h-4' />
-        Back to feed
+        Back to explore
       </Link>
       <PostCard post={post} onPostDeleted={handlePostDeleted} />
       <CommentForm postId={post._id} onCommentCreated={handleCommentCreated} />

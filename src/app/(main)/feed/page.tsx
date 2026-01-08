@@ -103,6 +103,14 @@ export default function FeedPage() {
     }
   }
 
+  const handlePostAnalyzed = (postId: string, aiAnalysis: Post['aiAnalysis']) => {
+    setPosts((prevPosts) =>
+      prevPosts.map((p) =>
+        p._id === postId ? { ...p, aiAnalysis } : p
+      )
+    )
+  }
+
   const renderContent = () => {
     if (isLoading) {
       return (
@@ -160,7 +168,10 @@ export default function FeedPage() {
 
   return (
     <div className='space-y-8'>
-      <CreatePostForm onPostCreated={handlePostCreated} />
+      <CreatePostForm
+        onPostCreated={handlePostCreated}
+        onPostAnalyzed={handlePostAnalyzed}
+      />
       {renderContent()}
     </div>
   )

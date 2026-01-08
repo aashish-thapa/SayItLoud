@@ -11,11 +11,14 @@ import Link from 'next/link'
 import Image from 'next/image'
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react'
 
+import { AIAnalysisResponse } from '@/types'
+
 interface CreatePostFormProps {
   onPostCreated: (newPost: Omit<Post, 'user'>) => void
+  onPostAnalyzed?: (postId: string, aiAnalysis: AIAnalysisResponse['aiAnalysis']) => void
 }
 
-export function CreatePostForm({ onPostCreated }: CreatePostFormProps) {
+export function CreatePostForm({ onPostCreated, onPostAnalyzed }: CreatePostFormProps) {
   const { user } = useAuth()
   const [content, setContent] = React.useState('')
   const [imageFile, setImageFile] = React.useState<File | null>(null)
@@ -65,14 +68,16 @@ export function CreatePostForm({ onPostCreated }: CreatePostFormProps) {
       removeImage()
       setShowEmojiPicker(false)
 
-      // Fire-and-forget AI analysis
+      // Fire-and-forget AI analysis, update post when complete
       analyzePost(newPost._id)
         .then((analysisResult) => {
-          console.log('AI Analysis triggered:', analysisResult)
-          // Here you could potentially update the post in the feed with the new analysis data
+          console.log('AI Analysis completed:', analysisResult)
+          if (onPostAnalyzed && analysisResult?.aiAnalysis) {
+            onPostAnalyzed(newPost._id, analysisResult.aiAnalysis)
+          }
         })
         .catch((err) => {
-          console.error('AI Analysis failed to trigger:', err)
+          console.error('AI Analysis failed:', err)
         })
     } catch (error) {
       if (error instanceof Error) {

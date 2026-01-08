@@ -22,6 +22,7 @@ export async function POST(request: NextRequest) {
         username: user.username,
         email: user.email,
         profilePicture: user.profilePicture,
+        isAdmin: user.isAdmin,
         token: user.getSignedJwtToken(),
       });
     } else {

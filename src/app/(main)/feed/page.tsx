@@ -8,6 +8,7 @@ import { CreatePostForm } from '@/components/feed/CreatePostForm'
 import { PostCardSkeleton } from '@/components/feed/PostCardSkeleton'
 import { Frown, Loader2 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { useSimulation } from '@/lib/simulation/useSimulation'
 
 const POSTS_PER_PAGE = 10
 
@@ -21,6 +22,12 @@ export default function FeedPage() {
   const [hasMore, setHasMore] = React.useState(true)
 
   const loadMoreRef = React.useRef<HTMLDivElement>(null)
+  const { triggerSimulation } = useSimulation()
+
+  // Trigger simulation on page load
+  React.useEffect(() => {
+    triggerSimulation('light')
+  }, [triggerSimulation])
 
   const loadFeed = React.useCallback(
     async (pageNum: number, append = false) => {

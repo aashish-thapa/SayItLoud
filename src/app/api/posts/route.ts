@@ -1,43 +1,107 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/db/mongodb';
-import Post from '@/models/Post';
+import Post, { IPost } from '@/models/Post';
 import { withAuth } from '@/lib/auth/middleware';
 import { uploadToCloudinary } from '@/lib/upload/cloudinary';
 
-// GET /api/posts - Get all posts with pagination
+// Discovery-focused scoring for explore page
+function scorePostForDiscovery(post: IPost): number {
+  let score = 0;
+
+  // Engagement score (likes + comments)
+  const likes = post.likes?.length || 0;
+  const comments = post.comments?.length || 0;
+  score += likes * 2 + comments * 5;
+
+  // Recency bonus (max 20 points, decays over 72 hours)
+  const ageMs = Date.now() - new Date(post.createdAt).getTime();
+  const hoursOld = ageMs / (1000 * 60 * 60);
+  score += Math.max(0, 20 * (1 - hoursOld / 72));
+
+  // Low engagement boost for discovery (help new posts get seen)
+  if (likes + comments < 5) {
+    score += 15;
+  }
+
+  // Quality signals from AI analysis
+  if (post.aiAnalysis?.factCheck === 'support') {
+    score += 10;
+  } else if (post.aiAnalysis?.factCheck === 'oppose') {
+    score -= 15;
+  }
+
+  // Penalize toxic content
+  if (post.aiAnalysis?.toxicity?.detected) {
+    score -= 100;
+  }
+
+  // Small random factor for diversity
+  score += Math.random() * 10;
+
+  return score;
+}
+
+// GET /api/posts - Get all posts with pagination (Explore - discovery focused)
 export async function GET(request: NextRequest) {
-  return withAuth(request, async () => {
+  return withAuth(request, async (_req, authUser) => {
     try {
       await dbConnect();
 
       const { searchParams } = new URL(request.url);
       const page = parseInt(searchParams.get('page') || '1', 10);
       const limit = parseInt(searchParams.get('limit') || '10', 10);
+
+      // Fetch recent posts (last 14 days for explore)
+      const posts = await Post.find({
+        createdAt: { $gte: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000) },
+      })
+        .populate('user', 'username profilePicture')
+        .populate('comments.user', 'username profilePicture');
+
+      // Filter out current user's posts (unless pinned) for explore
+      const currentUserId = authUser._id.toString();
+      const filteredPosts = posts.filter((post) => {
+        const postUserId = post.user._id?.toString() || post.user.toString();
+        return post.isPinned || postUserId !== currentUserId;
+      });
+
+      // Score and sort posts
+      const scoredPosts = filteredPosts.map((post) => ({
+        post,
+        score: scorePostForDiscovery(post),
+      }));
+
+      // Separate pinned and regular posts
+      const pinnedPosts = scoredPosts.filter((sp) => sp.post.isPinned);
+      const regularPosts = scoredPosts.filter((sp) => !sp.post.isPinned);
+
+      // Sort pinned by pinnedAt, regular by score
+      pinnedPosts.sort((a, b) => {
+        const aTime = a.post.pinnedAt ? new Date(a.post.pinnedAt).getTime() : 0;
+        const bTime = b.post.pinnedAt ? new Date(b.post.pinnedAt).getTime() : 0;
+        return bTime - aTime;
+      });
+      regularPosts.sort((a, b) => b.score - a.score);
+
+      const allSorted = [...pinnedPosts, ...regularPosts];
+
+      // Apply pagination
+      const total = allSorted.length;
       const skip = (page - 1) * limit;
+      const paginatedPosts = allSorted.slice(skip, skip + limit);
 
-      const [posts, total] = await Promise.all([
-        Post.find({})
-          .populate('user', 'username profilePicture')
-          .populate('comments.user', 'username profilePicture')
-          .sort({ isPinned: -1, pinnedAt: -1, createdAt: -1 })
-          .skip(skip)
-          .limit(limit),
-        Post.countDocuments({}),
-      ]);
-
-      // Debug: log pinned posts
-      const pinnedPosts = posts.filter(p => p.isPinned);
-      console.log('Pinned posts count:', pinnedPosts.length);
-      if (pinnedPosts.length > 0) {
-        console.log('Pinned posts:', pinnedPosts.map(p => ({ id: p._id, isPinned: p.isPinned, pinnedAt: p.pinnedAt })));
-      }
+      // Convert to response format
+      const responsePosts = paginatedPosts.map((sp) => ({
+        ...sp.post.toObject(),
+        relevanceScore: sp.score,
+      }));
 
       return NextResponse.json({
-        posts,
+        posts: responsePosts,
         total,
         page,
         limit,
-        hasMore: skip + posts.length < total,
+        hasMore: skip + paginatedPosts.length < total,
       });
     } catch (error) {
       console.error('Get posts error:', error);

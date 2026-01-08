@@ -104,7 +104,7 @@ export async function GET(request: NextRequest) {
         new Date(b.post.createdAt).getTime() - new Date(a.post.createdAt).getTime()
       );
 
-      // Interleave: 3 popular posts, then 1 new post
+      // Interleave: 3 popular posts, then 3 new posts
       const interleavedPosts: typeof regularPosts = [];
       let popIndex = 0;
       let newIndex = 0;
@@ -114,8 +114,8 @@ export async function GET(request: NextRequest) {
         for (let i = 0; i < 3 && popIndex < popularPosts.length; i++) {
           interleavedPosts.push(popularPosts[popIndex++]);
         }
-        // Add 1 new post
-        if (newIndex < newPosts.length) {
+        // Add up to 3 new posts
+        for (let i = 0; i < 3 && newIndex < newPosts.length; i++) {
           interleavedPosts.push(newPosts[newIndex++]);
         }
       }

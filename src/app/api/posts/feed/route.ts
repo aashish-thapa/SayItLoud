@@ -96,8 +96,23 @@ export async function GET(request: NextRequest) {
         relevanceScore: scorePost(post),
       }));
 
-      // Sort posts by relevance score (highest first), then by creation date
+      // Sort posts: pinned first, then by relevance score (highest first), then by creation date
       scoredPosts.sort((a, b) => {
+        // Pinned posts always come first
+        const aIsPinned = a.isPinned as boolean;
+        const bIsPinned = b.isPinned as boolean;
+        if (aIsPinned && !bIsPinned) return -1;
+        if (!aIsPinned && bIsPinned) return 1;
+
+        // If both pinned, sort by pinnedAt (most recently pinned first)
+        if (aIsPinned && bIsPinned) {
+          return (
+            new Date(b.pinnedAt as string).getTime() -
+            new Date(a.pinnedAt as string).getTime()
+          );
+        }
+
+        // Otherwise sort by relevance score
         if (b.relevanceScore !== a.relevanceScore) {
           return b.relevanceScore - a.relevanceScore;
         }

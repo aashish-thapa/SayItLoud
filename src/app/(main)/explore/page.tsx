@@ -6,6 +6,7 @@ import { getAllPosts } from '@/lib/api'
 import { Post } from '@/types'
 import { PostCardSkeleton } from '@/components/feed/PostCardSkeleton'
 import { Loader2 } from 'lucide-react'
+import { useSimulation } from '@/lib/simulation/useSimulation'
 
 const POSTS_PER_PAGE = 10
 
@@ -17,6 +18,12 @@ export default function ExplorePage() {
   const [hasMore, setHasMore] = React.useState(true)
 
   const loadMoreRef = React.useRef<HTMLDivElement>(null)
+  const { triggerSimulation } = useSimulation()
+
+  // Trigger simulation on page load (runs in background)
+  React.useEffect(() => {
+    triggerSimulation('light')
+  }, [triggerSimulation])
 
   const loadPosts = React.useCallback(
     async (pageNum: number, append = false) => {

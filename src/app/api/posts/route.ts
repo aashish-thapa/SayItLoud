@@ -65,25 +65,60 @@ export async function GET(request: NextRequest) {
         return post.isPinned || postUserId !== currentUserId;
       });
 
-      // Score and sort posts
+      // Score posts
       const scoredPosts = filteredPosts.map((post) => ({
         post,
         score: scorePostForDiscovery(post),
       }));
 
-      // Separate pinned and regular posts
+      // Separate pinned, popular, and new posts
       const pinnedPosts = scoredPosts.filter((sp) => sp.post.isPinned);
       const regularPosts = scoredPosts.filter((sp) => !sp.post.isPinned);
 
-      // Sort pinned by pinnedAt, regular by score
+      // Sort pinned by pinnedAt
       pinnedPosts.sort((a, b) => {
         const aTime = a.post.pinnedAt ? new Date(a.post.pinnedAt).getTime() : 0;
         const bTime = b.post.pinnedAt ? new Date(b.post.pinnedAt).getTime() : 0;
         return bTime - aTime;
       });
-      regularPosts.sort((a, b) => b.score - a.score);
 
-      const allSorted = [...pinnedPosts, ...regularPosts];
+      // Separate new posts (< 5 engagement, < 24 hours old) from popular posts
+      const now = Date.now();
+      const oneDayMs = 24 * 60 * 60 * 1000;
+
+      const newPosts = regularPosts.filter((sp) => {
+        const engagement = (sp.post.likes?.length || 0) + (sp.post.comments?.length || 0);
+        const ageMs = now - new Date(sp.post.createdAt).getTime();
+        return engagement < 5 && ageMs < oneDayMs;
+      });
+
+      const popularPosts = regularPosts.filter((sp) => {
+        const engagement = (sp.post.likes?.length || 0) + (sp.post.comments?.length || 0);
+        const ageMs = now - new Date(sp.post.createdAt).getTime();
+        return !(engagement < 5 && ageMs < oneDayMs);
+      });
+
+      // Sort: popular by score, new posts randomly shuffled
+      popularPosts.sort((a, b) => b.score - a.score);
+      newPosts.sort(() => Math.random() - 0.5);
+
+      // Interleave: 3 popular posts, then 1 new post
+      const interleavedPosts: typeof regularPosts = [];
+      let popIndex = 0;
+      let newIndex = 0;
+
+      while (popIndex < popularPosts.length || newIndex < newPosts.length) {
+        // Add up to 3 popular posts
+        for (let i = 0; i < 3 && popIndex < popularPosts.length; i++) {
+          interleavedPosts.push(popularPosts[popIndex++]);
+        }
+        // Add 1 new post
+        if (newIndex < newPosts.length) {
+          interleavedPosts.push(newPosts[newIndex++]);
+        }
+      }
+
+      const allSorted = [...pinnedPosts, ...interleavedPosts];
 
       // Apply pagination
       const total = allSorted.length;

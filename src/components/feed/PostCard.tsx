@@ -17,10 +17,11 @@ import {
   Tag,
   FileText,
   X,
+  Pin,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import * as React from 'react'
-import { likePost, deletePost } from '@/lib/api'
+import { likePost, deletePost, pinPost } from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/Button'
 import Image from 'next/image'
@@ -28,6 +29,7 @@ import Image from 'next/image'
 interface PostCardProps {
   post: Post
   onPostDeleted: (postId: string) => void
+  onPostPinned?: (postId: string, isPinned: boolean) => void
 }
 
 function formatContent(text: string): React.ReactNode[] {
@@ -63,7 +65,7 @@ function formatContent(text: string): React.ReactNode[] {
   })
 }
 
-export function PostCard({ post, onPostDeleted }: PostCardProps) {
+export function PostCard({ post, onPostDeleted, onPostPinned }: PostCardProps) {
   const { user } = useAuth()
 
   const [likes, setLikes] = React.useState(post.likes.length)
@@ -72,6 +74,8 @@ export function PostCard({ post, onPostDeleted }: PostCardProps) {
   )
   const [isLiking, setIsLiking] = React.useState(false)
   const [isDeleting, setIsDeleting] = React.useState(false)
+  const [isPinning, setIsPinning] = React.useState(false)
+  const [isPinned, setIsPinned] = React.useState(post.isPinned)
   const [imageError, setImageError] = React.useState(false)
   const [isExpanded, setIsExpanded] = React.useState(false)
   const [showFactCheckTooltip, setShowFactCheckTooltip] = React.useState(false)
@@ -127,6 +131,31 @@ export function PostCard({ post, onPostDeleted }: PostCardProps) {
     }
   }
 
+  const handlePin = async () => {
+    if (!user?.isAdmin || isPinning) return
+
+    setIsPinning(true)
+    const originalIsPinned = isPinned
+
+    // Optimistic update
+    setIsPinned(!isPinned)
+
+    try {
+      const result = await pinPost(post._id)
+      // Notify parent component
+      if (onPostPinned) {
+        onPostPinned(post._id, result.post.isPinned)
+      }
+    } catch (error) {
+      console.error('Failed to pin/unpin post:', error)
+      // Revert on error
+      setIsPinned(originalIsPinned)
+    } finally {
+      setIsPinning(false)
+    }
+  }
+
+  const isAdmin = user?.isAdmin === true
   const isToxic = post.aiAnalysis?.toxicity?.detected === true
   const isLongPost = post.content.length > 280
   const factCheck = post.aiAnalysis?.factCheck
@@ -155,9 +184,15 @@ export function PostCard({ post, onPostDeleted }: PostCardProps) {
     <div
       className={cn(
         'bg-card rounded-2xl shadow-sm border border-border transition-all hover:shadow-md relative',
-        isToxic && 'border-red-500/50'
+        isToxic && 'border-red-500/50',
+        isPinned && 'border-primary/50 ring-1 ring-primary/20'
       )}
     >
+      {isPinned && (
+        <div className='absolute -top-3 -left-3 bg-primary text-primary-foreground p-2 rounded-full shadow-lg'>
+          <Pin className='w-4 h-4' />
+        </div>
+      )}
       {isToxic && (
         <div className='absolute -top-3 -right-3 bg-red-500 text-white p-2 rounded-full shadow-lg'>
           <ShieldAlert className='w-5 h-5' />
@@ -385,6 +420,23 @@ export function PostCard({ post, onPostDeleted }: PostCardProps) {
                 <span className='hidden sm:inline'>{category}</span>
                 <span className='sm:hidden'>{category.length > 10 ? category.substring(0, 8) + '...' : category}</span>
               </div>
+            )}
+
+            {/* Pin button (admin only) */}
+            {isAdmin && (
+              <Button
+                onClick={handlePin}
+                variant='ghost'
+                size='icon'
+                className={cn(
+                  'w-8 h-8 text-muted-foreground hover:bg-primary/10 hover:text-primary',
+                  isPinned && 'text-primary bg-primary/10'
+                )}
+                disabled={isPinning}
+                title={isPinned ? 'Unpin post' : 'Pin post'}
+              >
+                <Pin className='w-4 h-4' />
+              </Button>
             )}
 
             {/* Delete button */}

@@ -12,6 +12,7 @@ import Image from 'next/image'
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react'
 
 import { AIAnalysisResponse } from '@/types'
+import { triggerSimulationOnce } from '@/lib/simulation/useSimulation'
 
 interface CreatePostFormProps {
   onPostCreated: (newPost: Omit<Post, 'user'>) => void
@@ -79,6 +80,9 @@ export function CreatePostForm({ onPostCreated, onPostAnalyzed }: CreatePostForm
         .catch((err) => {
           console.error('AI Analysis failed:', err)
         })
+
+      // Trigger engagement simulation after post creation
+      triggerSimulationOnce('light')
     } catch (error) {
       if (error instanceof Error) {
         setError(error.message)

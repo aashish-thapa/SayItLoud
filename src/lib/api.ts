@@ -211,6 +211,12 @@ export async function likePost(postId: string): Promise<Post> {
   })
 }
 
+export async function pinPost(postId: string): Promise<{ message: string; post: Post }> {
+  return fetcher(`${API_URL}/posts/${postId}/pin`, {
+    method: 'PUT',
+  })
+}
+
 export async function commentOnPost(
   postId: string,
   commentData: { text: string; image?: File }

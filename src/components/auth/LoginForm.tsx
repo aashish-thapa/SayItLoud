@@ -32,7 +32,7 @@ export function LoginForm() {
     try {
       const user = await login(formData)
       authLogin(user)
-      router.push('/feed')
+      router.push('/explore')
     } catch (error) {
       if (error instanceof Error) {
         setError(error.message)

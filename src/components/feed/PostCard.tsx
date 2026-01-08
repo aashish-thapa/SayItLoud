@@ -14,6 +14,9 @@ import {
   ThumbsDown,
   Minus,
   Info,
+  Tag,
+  FileText,
+  X,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import * as React from 'react'
@@ -71,6 +74,8 @@ export function PostCard({ post, onPostDeleted }: PostCardProps) {
   const [isDeleting, setIsDeleting] = React.useState(false)
   const [imageError, setImageError] = React.useState(false)
   const [isExpanded, setIsExpanded] = React.useState(false)
+  const [showFactCheckTooltip, setShowFactCheckTooltip] = React.useState(false)
+  const [showSummaryTooltip, setShowSummaryTooltip] = React.useState(false)
 
   const handleLike = async () => {
     if (!user || isLiking) return
@@ -126,10 +131,25 @@ export function PostCard({ post, onPostDeleted }: PostCardProps) {
   const isLongPost = post.content.length > 280
   const factCheck = post.aiAnalysis?.factCheck
   const factCheckReason = post.aiAnalysis?.factCheckReason
+  const topics = post.aiAnalysis?.topics || []
+  const summary = post.aiAnalysis?.summary
+  const category = post.aiAnalysis?.category
 
   const toggleExpanded = () => {
     setIsExpanded(!isExpanded)
   }
+
+  // Close tooltips when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = () => {
+      setShowFactCheckTooltip(false)
+      setShowSummaryTooltip(false)
+    }
+    if (showFactCheckTooltip || showSummaryTooltip) {
+      document.addEventListener('click', handleClickOutside)
+      return () => document.removeEventListener('click', handleClickOutside)
+    }
+  }, [showFactCheckTooltip, showSummaryTooltip])
 
   return (
     <div
@@ -203,6 +223,20 @@ export function PostCard({ post, onPostDeleted }: PostCardProps) {
                 </p>
               )}
             </div>
+            {/* AI Topics */}
+            {topics.length > 0 && (
+              <div className='mt-3 flex flex-wrap gap-1.5'>
+                {topics.slice(0, 5).map((topic, index) => (
+                  <span
+                    key={index}
+                    className='inline-flex items-center gap-1 text-xs bg-primary/10 text-primary py-0.5 px-2 rounded-full'
+                  >
+                    <Tag className='w-3 h-3' />
+                    {topic}
+                  </span>
+                ))}
+              </div>
+            )}
             {post.image && !imageError && (
               <div className='mt-4 relative overflow-hidden rounded-xl border border-border'>
                 <Image
@@ -243,44 +277,117 @@ export function PostCard({ post, onPostDeleted }: PostCardProps) {
               <span className='hidden sm:inline'>Share</span>
             </button>
           </div>
-          <div className='flex items-center gap-2 sm:gap-4'>
-            {factCheck && (
-              <div className='relative group/factcheck'>
+          <div className='flex items-center gap-2 sm:gap-3 flex-wrap'>
+            {/* Summary tooltip - hover on desktop, click on mobile */}
+            {summary && (
+              <div className='relative group/summary'>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setShowSummaryTooltip(!showSummaryTooltip)
+                    setShowFactCheckTooltip(false)
+                  }}
+                  className='text-xs flex items-center gap-1.5 py-1 px-2.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 transition-colors'
+                >
+                  <FileText className='w-3.5 h-3.5' />
+                  <span className='hidden sm:inline'>Summary</span>
+                </button>
                 <div
                   className={cn(
-                    'text-xs flex items-center gap-1.5 py-1 px-2.5 rounded-full cursor-help',
+                    'absolute bottom-full left-0 mb-2 w-72 p-3 bg-popover text-popover-foreground text-xs rounded-lg shadow-lg border border-border transition-all duration-200 z-50',
+                    showSummaryTooltip
+                      ? 'opacity-100 visible'
+                      : 'opacity-0 invisible sm:group-hover/summary:opacity-100 sm:group-hover/summary:visible'
+                  )}
+                >
+                  <div className='flex items-center justify-between mb-2'>
+                    <div className='font-semibold flex items-center gap-1.5'>
+                      <FileText className='w-3.5 h-3.5' />
+                      AI Summary
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setShowSummaryTooltip(false)
+                      }}
+                      className='sm:hidden p-0.5 hover:bg-muted rounded'
+                    >
+                      <X className='w-3.5 h-3.5' />
+                    </button>
+                  </div>
+                  <p className='text-muted-foreground leading-relaxed'>{summary}</p>
+                  <div className='absolute -bottom-1.5 left-4 w-3 h-3 bg-popover border-r border-b border-border rotate-45'></div>
+                </div>
+              </div>
+            )}
+
+            {/* Fact check badge - hover on desktop, click on mobile */}
+            {factCheck && (
+              <div className='relative group/factcheck'>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setShowFactCheckTooltip(!showFactCheckTooltip)
+                    setShowSummaryTooltip(false)
+                  }}
+                  className={cn(
+                    'text-xs flex items-center gap-1.5 py-1 px-2.5 rounded-full transition-colors',
                     {
-                      'bg-green-500/20 text-green-600 dark:text-green-400': factCheck === 'support',
-                      'bg-red-500/20 text-red-600 dark:text-red-400': factCheck === 'oppose',
-                      'bg-muted text-muted-foreground': factCheck === 'neutral',
+                      'bg-green-500/20 text-green-600 dark:text-green-400 hover:bg-green-500/30': factCheck === 'support',
+                      'bg-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-500/30': factCheck === 'oppose',
+                      'bg-muted text-muted-foreground hover:bg-muted/80': factCheck === 'neutral',
                     }
                   )}
                 >
-                  {factCheck === 'support' && (
-                    <ThumbsUp className='w-3.5 h-3.5' />
-                  )}
-                  {factCheck === 'oppose' && (
-                    <ThumbsDown className='w-3.5 h-3.5' />
-                  )}
+                  {factCheck === 'support' && <ThumbsUp className='w-3.5 h-3.5' />}
+                  {factCheck === 'oppose' && <ThumbsDown className='w-3.5 h-3.5' />}
                   {factCheck === 'neutral' && <Minus className='w-3.5 h-3.5' />}
                   <span className='font-semibold capitalize'>{factCheck}</span>
-                  {factCheckReason && (
-                    <Info className='w-3 h-3 opacity-60' />
-                  )}
-                </div>
+                  {factCheckReason && <Info className='w-3 h-3 opacity-60' />}
+                </button>
                 {factCheckReason && (
-                  <div className='absolute bottom-full right-0 mb-2 w-64 p-3 bg-popover text-popover-foreground text-xs rounded-lg shadow-lg border border-border opacity-0 invisible group-hover/factcheck:opacity-100 group-hover/factcheck:visible transition-all duration-200 z-50'>
-                    <div className='font-semibold mb-1 capitalize'>{factCheck}</div>
+                  <div
+                    className={cn(
+                      'absolute bottom-full right-0 mb-2 w-72 p-3 bg-popover text-popover-foreground text-xs rounded-lg shadow-lg border border-border transition-all duration-200 z-50',
+                      showFactCheckTooltip
+                        ? 'opacity-100 visible'
+                        : 'opacity-0 invisible sm:group-hover/factcheck:opacity-100 sm:group-hover/factcheck:visible'
+                    )}
+                  >
+                    <div className='flex items-center justify-between mb-2'>
+                      <div className='font-semibold capitalize flex items-center gap-1.5'>
+                        {factCheck === 'support' && <ThumbsUp className='w-3.5 h-3.5 text-green-500' />}
+                        {factCheck === 'oppose' && <ThumbsDown className='w-3.5 h-3.5 text-red-500' />}
+                        {factCheck === 'neutral' && <Minus className='w-3.5 h-3.5' />}
+                        {factCheck}
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setShowFactCheckTooltip(false)
+                        }}
+                        className='sm:hidden p-0.5 hover:bg-muted rounded'
+                      >
+                        <X className='w-3.5 h-3.5' />
+                      </button>
+                    </div>
                     <p className='text-muted-foreground leading-relaxed'>{factCheckReason}</p>
                     <div className='absolute -bottom-1.5 right-4 w-3 h-3 bg-popover border-r border-b border-border rotate-45'></div>
                   </div>
                 )}
               </div>
             )}
-            <div className='hidden sm:flex text-xs items-center gap-2 bg-secondary text-secondary-foreground py-1 px-2.5 rounded-full'>
-              <BarChart2 className='w-3.5 h-3.5' />
-              <span>{post.aiAnalysis.category}</span>
-            </div>
+
+            {/* Category badge - now visible on mobile too */}
+            {category && (
+              <div className='text-xs flex items-center gap-1.5 bg-secondary text-secondary-foreground py-1 px-2.5 rounded-full'>
+                <BarChart2 className='w-3.5 h-3.5' />
+                <span className='hidden sm:inline'>{category}</span>
+                <span className='sm:hidden'>{category.length > 10 ? category.substring(0, 8) + '...' : category}</span>
+              </div>
+            )}
+
+            {/* Delete button */}
             {isOwner && (
               <Button
                 onClick={handleDelete}

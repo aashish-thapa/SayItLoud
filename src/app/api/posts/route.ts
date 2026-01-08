@@ -19,11 +19,18 @@ export async function GET(request: NextRequest) {
         Post.find({})
           .populate('user', 'username profilePicture')
           .populate('comments.user', 'username profilePicture')
-          .sort({ createdAt: -1 })
+          .sort({ isPinned: -1, pinnedAt: -1, createdAt: -1 })
           .skip(skip)
           .limit(limit),
         Post.countDocuments({}),
       ]);
+
+      // Debug: log pinned posts
+      const pinnedPosts = posts.filter(p => p.isPinned);
+      console.log('Pinned posts count:', pinnedPosts.length);
+      if (pinnedPosts.length > 0) {
+        console.log('Pinned posts:', pinnedPosts.map(p => ({ id: p._id, isPinned: p.isPinned, pinnedAt: p.pinnedAt })));
+      }
 
       return NextResponse.json({
         posts,

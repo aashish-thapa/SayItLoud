@@ -1,4 +1,5 @@
 import Post from '@/models/Post';
+import { sanitizeForAnalysis } from '@/lib/sanitize';
 
 // Hugging Face Configuration
 const HF_API_TOKEN = process.env.HF_API_TOKEN;
@@ -150,6 +151,12 @@ export const performAIAnalysisOnPost = async (postId: string) => {
 
     const postContent = post.content;
 
+    // Sanitize content for local AI backend (removes HTML, URLs, excessive whitespace, etc.)
+    // This reduces unnecessary tokens the model has to process
+    const sanitizedContent = sanitizeForAnalysis(postContent, {
+      maxLength: 5000, // Match backend's MAX_CONTENT_LENGTH
+    });
+
     // Initialize results
     let sentiment: SentimentType = 'Unknown';
     let emotions: { emotion: string; score: number }[] = [];
@@ -176,7 +183,7 @@ export const performAIAnalysisOnPost = async (postId: string) => {
               'Content-Type': 'application/json',
               'X-API-Key': LOCAL_AI_API_KEY || '',
             },
-            body: JSON.stringify({ content: postContent }),
+            body: JSON.stringify({ content: sanitizedContent }),
           });
 
           if (!response.ok) {

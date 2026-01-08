@@ -12,6 +12,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/DropdownMenu'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/Dialog'
+import { CreatePostForm } from '@/components/feed/CreatePostForm'
 import { useRouter } from 'next/navigation'
 import * as React from 'react'
 import { Search } from './Search'
@@ -27,6 +34,7 @@ export function Navbar() {
   const [showNotifications, setShowNotifications] = React.useState(false)
   const [unreadCount, setUnreadCount] = React.useState(0)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false)
+  const [isPostDialogOpen, setIsPostDialogOpen] = React.useState(false)
 
   React.useEffect(() => {
     if (!user) return
@@ -45,13 +53,19 @@ export function Navbar() {
     router.push('/')
   }
 
+  const handlePostCreated = () => {
+    setIsPostDialogOpen(false)
+    // Refresh the current page to show the new post
+    router.refresh()
+  }
+
   return (
     <>
       <header className='sticky top-0 z-40 w-full border-b border-border bg-card'>
         <div className='container mx-auto flex h-16 items-center'>
           {/* Left Section */}
           <div className='flex items-center gap-6'>
-            <Link href='/feed' className='flex items-center gap-2'>
+            <Link href='/explore' className='flex items-center gap-2'>
               <BrainCircuit className='h-7 w-7 text-primary' />
               <span className='hidden sm:inline-block font-bold text-lg'>
                 SayItLoud
@@ -68,10 +82,15 @@ export function Navbar() {
           <div className='flex items-center gap-2'>
             <ThemeToggle />
 
-            <Button className='hidden sm:flex items-center gap-2'>
-              <PenSquare className='w-5 h-5' />
-              <span>Post</span>
-            </Button>
+            {user && (
+              <Button
+                className='hidden sm:flex items-center gap-2'
+                onClick={() => setIsPostDialogOpen(true)}
+              >
+                <PenSquare className='w-5 h-5' />
+                <span>Post</span>
+              </Button>
+            )}
 
             {user ? (
               <>
@@ -163,8 +182,21 @@ export function Navbar() {
         </div>
       </header>
       {isMobileMenuOpen && (
-        <MobileMenu onClose={() => setIsMobileMenuOpen(false)} />
+        <MobileMenu
+          onClose={() => setIsMobileMenuOpen(false)}
+          onPostClick={() => setIsPostDialogOpen(true)}
+        />
       )}
+
+      {/* Create Post Dialog */}
+      <Dialog open={isPostDialogOpen} onOpenChange={setIsPostDialogOpen}>
+        <DialogContent className='sm:max-w-[600px]'>
+          <DialogHeader>
+            <DialogTitle>Create a new post</DialogTitle>
+          </DialogHeader>
+          <CreatePostForm onPostCreated={handlePostCreated} />
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

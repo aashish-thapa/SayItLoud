@@ -18,9 +18,10 @@ import Image from 'next/image'
 
 interface MobileMenuProps {
   onClose: () => void
+  onPostClick?: () => void
 }
 
-export function MobileMenu({ onClose }: MobileMenuProps) {
+export function MobileMenu({ onClose, onPostClick }: MobileMenuProps) {
   const { user, logout } = useAuth()
 
   const handleLogout = () => {
@@ -46,7 +47,7 @@ export function MobileMenu({ onClose }: MobileMenuProps) {
   ]
 
   return (
-    <div className='fixed inset-0 z-50 bg-white p-4 md:hidden'>
+    <div className='fixed inset-0 z-50 bg-background p-4 md:hidden'>
       <div className='flex justify-between items-center mb-8'>
         <h2 className='font-bold text-lg'>Menu</h2>
         <Button variant='ghost' size='icon' onClick={onClose}>
@@ -97,7 +98,7 @@ export function MobileMenu({ onClose }: MobileMenuProps) {
                         onClose()
                       }}
                     >
-                      <div className='flex items-center gap-4 p-3 rounded-lg hover:bg-gray-100 transition-colors font-semibold text-lg'>
+                      <div className='flex items-center gap-4 p-3 rounded-lg hover:bg-muted transition-colors font-semibold text-lg'>
                         <item.icon className='w-6 h-6' />
                         <span>{item.label}</span>
                       </div>
@@ -107,7 +108,14 @@ export function MobileMenu({ onClose }: MobileMenuProps) {
               </ul>
             </nav>
             <div className='mt-auto space-y-4'>
-              <Button size='lg' className='w-full py-3 text-lg font-bold'>
+              <Button
+                size='lg'
+                className='w-full py-3 text-lg font-bold'
+                onClick={() => {
+                  onClose()
+                  onPostClick?.()
+                }}
+              >
                 <PenSquare className='w-5 h-5 mr-3' />
                 Post
               </Button>

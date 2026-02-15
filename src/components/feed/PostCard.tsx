@@ -350,7 +350,9 @@ export function PostCard({ post, onPostDeleted, onPostPinned }: PostCardProps) {
                       <X className='w-3.5 h-3.5' />
                     </button>
                   </div>
-                  <p className='text-muted-foreground leading-relaxed'>{summary}</p>
+                  <p className='text-muted-foreground leading-relaxed'>
+                    {summary}
+                  </p>
                   <div className='absolute -bottom-1.5 left-4 w-3 h-3 bg-popover border-r border-b border-border rotate-45'></div>
                 </div>
               </div>
@@ -368,14 +370,21 @@ export function PostCard({ post, onPostDeleted, onPostPinned }: PostCardProps) {
                   className={cn(
                     'text-xs flex items-center gap-1.5 py-1 px-2.5 rounded-full transition-colors',
                     {
-                      'bg-green-500/20 text-green-600 dark:text-green-400 hover:bg-green-500/30': factCheck === 'support',
-                      'bg-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-500/30': factCheck === 'oppose',
-                      'bg-muted text-muted-foreground hover:bg-muted/80': factCheck === 'neutral',
+                      'bg-green-500/20 text-green-600 dark:text-green-400 hover:bg-green-500/30':
+                        factCheck === 'support',
+                      'bg-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-500/30':
+                        factCheck === 'oppose',
+                      'bg-muted text-muted-foreground hover:bg-muted/80':
+                        factCheck === 'neutral',
                     }
                   )}
                 >
-                  {factCheck === 'support' && <ThumbsUp className='w-3.5 h-3.5' />}
-                  {factCheck === 'oppose' && <ThumbsDown className='w-3.5 h-3.5' />}
+                  {factCheck === 'support' && (
+                    <ThumbsUp className='w-3.5 h-3.5' />
+                  )}
+                  {factCheck === 'oppose' && (
+                    <ThumbsDown className='w-3.5 h-3.5' />
+                  )}
                   {factCheck === 'neutral' && <Minus className='w-3.5 h-3.5' />}
                   <span className='font-semibold capitalize'>{factCheck}</span>
                   {factCheckReason && <Info className='w-3 h-3 opacity-60' />}
@@ -383,7 +392,7 @@ export function PostCard({ post, onPostDeleted, onPostPinned }: PostCardProps) {
                 {factCheckReason && (
                   <div
                     className={cn(
-                      'absolute bottom-full right-0 mb-2 w-72 p-3 bg-popover text-popover-foreground text-xs rounded-lg shadow-lg border border-border transition-all duration-200 z-50',
+                      'absolute bottom-full left-0 sm:left-auto sm:right-0 mb-2 w-72 max-w-[calc(100vw-2rem)] p-3 bg-popover text-popover-foreground text-xs rounded-lg shadow-lg border border-border transition-all duration-200 z-50',
                       showFactCheckTooltip
                         ? 'opacity-100 visible'
                         : 'opacity-0 invisible sm:group-hover/factcheck:opacity-100 sm:group-hover/factcheck:visible'
@@ -391,9 +400,15 @@ export function PostCard({ post, onPostDeleted, onPostPinned }: PostCardProps) {
                   >
                     <div className='flex items-center justify-between mb-2'>
                       <div className='font-semibold capitalize flex items-center gap-1.5'>
-                        {factCheck === 'support' && <ThumbsUp className='w-3.5 h-3.5 text-green-500' />}
-                        {factCheck === 'oppose' && <ThumbsDown className='w-3.5 h-3.5 text-red-500' />}
-                        {factCheck === 'neutral' && <Minus className='w-3.5 h-3.5' />}
+                        {factCheck === 'support' && (
+                          <ThumbsUp className='w-3.5 h-3.5 text-green-500' />
+                        )}
+                        {factCheck === 'oppose' && (
+                          <ThumbsDown className='w-3.5 h-3.5 text-red-500' />
+                        )}
+                        {factCheck === 'neutral' && (
+                          <Minus className='w-3.5 h-3.5' />
+                        )}
                         {factCheck}
                       </div>
                       <button
@@ -406,8 +421,10 @@ export function PostCard({ post, onPostDeleted, onPostPinned }: PostCardProps) {
                         <X className='w-3.5 h-3.5' />
                       </button>
                     </div>
-                    <p className='text-muted-foreground leading-relaxed'>{factCheckReason}</p>
-                    <div className='absolute -bottom-1.5 right-4 w-3 h-3 bg-popover border-r border-b border-border rotate-45'></div>
+                    <p className='text-muted-foreground leading-relaxed'>
+                      {factCheckReason}
+                    </p>
+                    <div className='absolute -bottom-1.5 left-4 sm:left-auto sm:right-4 w-3 h-3 bg-popover border-r border-b border-border rotate-45'></div>
                   </div>
                 )}
               </div>
@@ -418,7 +435,11 @@ export function PostCard({ post, onPostDeleted, onPostPinned }: PostCardProps) {
               <div className='text-xs flex items-center gap-1.5 bg-secondary text-secondary-foreground py-1 px-2.5 rounded-full'>
                 <BarChart2 className='w-3.5 h-3.5' />
                 <span className='hidden sm:inline'>{category}</span>
-                <span className='sm:hidden'>{category.length > 10 ? category.substring(0, 8) + '...' : category}</span>
+                <span className='sm:hidden'>
+                  {category.length > 10
+                    ? category.substring(0, 8) + '...'
+                    : category}
+                </span>
               </div>
             )}
 

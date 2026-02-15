@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Activity } from 'lucide-react'
+import { useAuth } from '@/contexts/AuthContext'
 
 interface ServerHealth {
   status: string
@@ -12,10 +13,13 @@ interface ServerHealth {
 }
 
 export function ServerStatusWidget() {
+  const { user } = useAuth()
   const [health, setHealth] = useState<ServerHealth | null>(null)
   const [error, setError] = useState(false)
 
   useEffect(() => {
+    if (!user) return
+
     const fetchStatus = async () => {
       try {
         const res = await fetch('/api/health')
@@ -29,10 +33,31 @@ export function ServerStatusWidget() {
       }
     }
 
-    fetchStatus()
-    const interval = setInterval(fetchStatus, 5000)
-    return () => clearInterval(interval)
-  }, [])
+    let interval: ReturnType<typeof setInterval>
+
+    const startPolling = () => {
+      fetchStatus()
+      interval = setInterval(fetchStatus, 5000)
+    }
+
+    const stopPolling = () => clearInterval(interval)
+
+    const handleVisibility = () => {
+      if (document.hidden) {
+        stopPolling()
+      } else {
+        startPolling()
+      }
+    }
+
+    startPolling()
+    document.addEventListener('visibilitychange', handleVisibility)
+
+    return () => {
+      stopPolling()
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
+  }, [user])
 
   const isOnline = !error && health?.status === 'ok'
 

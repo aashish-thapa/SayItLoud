@@ -1,6 +1,8 @@
 import { Navbar } from '@/components/layout/Navbar'
 import { LeftSidebar } from '@/components/layout/LeftSidebar'
 import { RightSidebar } from '@/components/layout/RightSidebar'
+import { ChatBot } from '@/components/chat/ChatBot'
+import { ServerStatusWidget } from '@/components/layout/ServerStatusWidget'
 
 interface MainLayoutProps {
   children: React.ReactNode
@@ -15,12 +17,17 @@ export default function MainLayout({ children }: MainLayoutProps) {
           <LeftSidebar />
         </aside>
         <main className='col-span-12 md:col-span-9 lg:col-span-6'>
+          {/* Show server status on mobile/tablet only (hidden on lg where RightSidebar shows it) */}
+          <div className='lg:hidden mb-6'>
+            <ServerStatusWidget />
+          </div>
           {children}
         </main>
         <aside className='hidden lg:block lg:col-span-3 sticky top-24'>
           <RightSidebar />
         </aside>
       </div>
+      <ChatBot />
     </div>
   )
 }
